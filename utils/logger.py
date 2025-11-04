@@ -16,20 +16,25 @@ class Logger:
         # Configuration du logger
         log_file = os.path.join(log_dir, f"ntl_systoolbox_{datetime.now().strftime('%Y%m%d')}.log")
         
-        logging.basicConfig(
-            level=logging.INFO,
-            format='%(asctime)s - %(levelname)s - %(message)s',
-            handlers=[
-                logging.FileHandler(log_file, encoding='utf-8'),
-                logging.StreamHandler()
-            ]
-        )
-        
         self.logger = logging.getLogger('NTL-SysToolbox')
         self.logger.setLevel(logging.INFO)
         
-        # Désactiver la sortie console pour éviter la duplication
-        self.logger.handlers[1].setLevel(logging.WARNING)
+        # Handler fichier
+        file_handler = logging.FileHandler(log_file, encoding='utf-8')
+        file_handler.setLevel(logging.INFO)
+        
+        # Handler console (seulement pour les warnings et erreurs)
+        console_handler = logging.StreamHandler()
+        console_handler.setLevel(logging.WARNING)
+        
+        # Format des logs
+        formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
+        file_handler.setFormatter(formatter)
+        console_handler.setFormatter(formatter)
+        
+        # Ajout des handlers
+        self.logger.addHandler(file_handler)
+        self.logger.addHandler(console_handler)
     
     def info(self, message):
         """Log de niveau INFO"""
