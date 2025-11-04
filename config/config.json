@@ -1,0 +1,59 @@
+{
+  "application": {
+    "name": "NTL-SysToolbox",
+    "version": "1.0",
+    "description": "Outil d'administration système pour NordTransit Logistics"
+  },
+  "infrastructure": {
+    "sites": {
+      "siege": {
+        "name": "Siège social (Lille)",
+        "network": "192.168.10.0/24",
+        "servers": {
+          "DC01": "192.168.10.10",
+          "DC02": "192.168.10.11",
+          "WMS-DB": "192.168.10.21",
+          "WMS-APP": "192.168.10.22",
+          "IPBX-VM": "192.168.10.40",
+          "SUPER-01": "192.168.10.50"
+        }
+      },
+      "wh1": {
+        "name": "Entrepôt WH1 (Lens)",
+        "network": "192.168.20.0/24"
+      },
+      "wh2": {
+        "name": "Entrepôt WH2 (Valenciennes)",
+        "network": "192.168.30.0/24"
+      },
+      "wh3": {
+        "name": "Entrepôt WH3 (Arras)",
+        "network": "192.168.40.0/24"
+      },
+      "cdk": {
+        "name": "Cross-dock (saisonnier)",
+        "network": "192.168.50.0/24"
+      }
+    }
+  },
+  "database": {
+    "wms": {
+      "host": "192.168.10.21",
+      "port": 3306,
+      "database": "wms_db",
+      "user": "wms_user"
+    }
+  },
+  "backup": {
+    "retention_days": 30,
+    "output_directory": "output/backups"
+  },
+  "audit": {
+    "scan_timeout": 3,
+    "eol_warning_days": 180
+  },
+  "logging": {
+    "level": "INFO",
+    "output_directory": "output/logs"
+  }
+}
