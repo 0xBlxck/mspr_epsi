@@ -1,0 +1,160 @@
+{
+  "last_updated": "2025-01-15",
+  "source": "Documentation officielle des éditeurs",
+  "windows_server": [
+    {
+      "version": "Windows Server 2008",
+      "release_date": "2008-02-27",
+      "eol_date": "2020-01-14",
+      "status": "obsolete",
+      "extended_support": false
+    },
+    {
+      "version": "Windows Server 2008 R2",
+      "release_date": "2009-10-22",
+      "eol_date": "2020-01-14",
+      "status": "obsolete",
+      "extended_support": false
+    },
+    {
+      "version": "Windows Server 2012",
+      "release_date": "2012-09-04",
+      "eol_date": "2023-10-10",
+      "status": "obsolete",
+      "extended_support": false
+    },
+    {
+      "version": "Windows Server 2012 R2",
+      "release_date": "2013-10-18",
+      "eol_date": "2023-10-10",
+      "status": "obsolete",
+      "extended_support": false
+    },
+    {
+      "version": "Windows Server 2016",
+      "release_date": "2016-10-12",
+      "eol_date": "2027-01-12",
+      "status": "supported",
+      "extended_support": true
+    },
+    {
+      "version": "Windows Server 2019",
+      "release_date": "2018-11-13",
+      "eol_date": "2029-01-09",
+      "status": "supported",
+      "extended_support": true
+    },
+    {
+      "version": "Windows Server 2022",
+      "release_date": "2021-08-18",
+      "eol_date": "2031-10-14",
+      "status": "supported",
+      "extended_support": true
+    }
+  ],
+  "ubuntu": [
+    {
+      "version": "Ubuntu 14.04 LTS",
+      "release_date": "2014-04-17",
+      "eol_date": "2019-04-30",
+      "status": "obsolete",
+      "extended_support": false
+    },
+    {
+      "version": "Ubuntu 16.04 LTS",
+      "release_date": "2016-04-21",
+      "eol_date": "2021-04-30",
+      "status": "obsolete",
+      "extended_support": false
+    },
+    {
+      "version": "Ubuntu 18.04 LTS",
+      "release_date": "2018-04-26",
+      "eol_date": "2023-05-31",
+      "status": "obsolete",
+      "extended_support": false
+    },
+    {
+      "version": "Ubuntu 20.04 LTS",
+      "release_date": "2020-04-23",
+      "eol_date": "2025-04-30",
+      "status": "ending_soon",
+      "extended_support": true
+    },
+    {
+      "version": "Ubuntu 22.04 LTS",
+      "release_date": "2022-04-21",
+      "eol_date": "2027-04-30",
+      "status": "supported",
+      "extended_support": true
+    },
+    {
+      "version": "Ubuntu 24.04 LTS",
+      "release_date": "2024-04-25",
+      "eol_date": "2029-04-30",
+      "status": "supported",
+      "extended_support": true
+    }
+  ],
+  "centos": [
+    {
+      "version": "CentOS 6",
+      "release_date": "2011-07-10",
+      "eol_date": "2020-11-30",
+      "status": "obsolete",
+      "extended_support": false
+    },
+    {
+      "version": "CentOS 7",
+      "release_date": "2014-07-07",
+      "eol_date": "2024-06-30",
+      "status": "obsolete",
+      "extended_support": false
+    },
+    {
+      "version": "CentOS 8",
+      "release_date": "2019-09-24",
+      "eol_date": "2021-12-31",
+      "status": "obsolete",
+      "extended_support": false,
+      "note": "Projet arrêté prématurément"
+    }
+  ],
+  "debian": [
+    {
+      "version": "Debian 8 (Jessie)",
+      "release_date": "2015-04-25",
+      "eol_date": "2020-06-30",
+      "status": "obsolete",
+      "extended_support": false
+    },
+    {
+      "version": "Debian 9 (Stretch)",
+      "release_date": "2017-06-17",
+      "eol_date": "2022-06-30",
+      "status": "obsolete",
+      "extended_support": false
+    },
+    {
+      "version": "Debian 10 (Buster)",
+      "release_date": "2019-07-06",
+      "eol_date": "2024-06-30",
+      "status": "obsolete",
+      "extended_support": false
+    },
+    {
+      "version": "Debian 11 (Bullseye)",
+      "release_date": "2021-08-14",
+      "eol_date": "2026-06-30",
+      "status": "supported",
+      "extended_support": true
+    },
+    {
+      "version": "Debian 12 (Bookworm)",
+      "release_date": "2023-06-10",
+      "eol_date": "2028-06-30",
+      "status": "supported",
+      "extended_support": true
+    }
+  ]
+}
