@@ -1,17 +1,17 @@
 #!/usr/bin/env python3
 """
-Interface graphique pour NTL-SysToolbox
-GUI moderne avec tkinter pour l'administration système
+NTL-SysToolbox - Interface graphique
+Interface utilisateur graphique pour l'outil d'administration système
 """
 
-import tkinter as tk
-from tkinter import ttk, scrolledtext, messagebox, filedialog
-import threading
 import sys
 import os
+import tkinter as tk
+from tkinter import ttk, scrolledtext, messagebox, filedialog
 from datetime import datetime
+import threading
 
-# Ajout du répertoire courant au path
+# Ajout du répertoire courant au path pour les imports
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from modules.diagnostic import DiagnosticModule
@@ -22,13 +22,13 @@ from utils.output import OutputManager
 
 
 class NTLSysToolboxGUI:
-    """Interface graphique principale"""
+    """Interface graphique principale de l'application"""
     
     def __init__(self, root):
         self.root = root
-        self.root.title("NTL-SysToolbox - Administration Système")
-        self.root.geometry("1200x800")
-        self.root.minsize(1000, 600)
+        self.root.title("NTL-SysToolbox v1.0 - NordTransit Logistics")
+        self.root.geometry("1000x700")
+        self.root.resizable(True, True)
         
         # Initialisation des modules
         self.logger = Logger()
@@ -38,724 +38,697 @@ class NTLSysToolboxGUI:
         self.audit = AuditModule(self.logger, self.output_manager)
         
         # Configuration du style
-        self.setup_styles()
+        self.setup_style()
         
         # Création de l'interface
         self.create_widgets()
         
         # Log de démarrage
         self.logger.info("Interface graphique NTL-SysToolbox démarrée")
-        self.log_message("✅ Application démarrée", "info")
+        self.log_to_console("Application démarrée avec succès")
     
-    def setup_styles(self):
-        """Configure les styles de l'interface"""
+    def setup_style(self):
+        """Configure le style de l'application"""
         style = ttk.Style()
         style.theme_use('clam')
         
-        # Couleurs professionnelles
-        bg_color = "#f0f0f0"
-        accent_color = "#0066cc"
-        success_color = "#28a745"
-        warning_color = "#ffc107"
-        error_color = "#dc3545"
-        
-        # Configuration des styles
-        style.configure("TFrame", background=bg_color)
-        style.configure("TLabel", background=bg_color, font=("Segoe UI", 10))
-        style.configure("Title.TLabel", font=("Segoe UI", 14, "bold"), foreground=accent_color)
-        style.configure("TButton", font=("Segoe UI", 10), padding=8)
-        style.configure("Accent.TButton", foreground="white", background=accent_color)
-        style.map("Accent.TButton", background=[("active", "#0052a3")])
-        
-        self.root.configure(bg=bg_color)
+        # Couleurs personnalisées
+        style.configure('Title.TLabel', font=('Arial', 16, 'bold'), foreground='#2c3e50')
+        style.configure('Subtitle.TLabel', font=('Arial', 10), foreground='#7f8c8d')
+        style.configure('Module.TButton', font=('Arial', 11), padding=10)
+        style.configure('Action.TButton', font=('Arial', 10), padding=5)
     
     def create_widgets(self):
-        """Crée les widgets de l'interface"""
+        """Crée tous les widgets de l'interface"""
         # En-tête
-        header_frame = ttk.Frame(self.root, padding="20 10")
-        header_frame.pack(fill=tk.X)
+        header_frame = tk.Frame(self.root, bg='#34495e', height=80)
+        header_frame.pack(fill=tk.X, side=tk.TOP)
+        header_frame.pack_propagate(False)
         
-        title_label = ttk.Label(
+        title_label = tk.Label(
             header_frame,
-            text="🖥️ NTL-SysToolbox",
-            style="Title.TLabel"
+            text="NTL-SysToolbox",
+            font=('Arial', 20, 'bold'),
+            bg='#34495e',
+            fg='white'
         )
-        title_label.pack(side=tk.LEFT)
+        title_label.pack(pady=10)
         
-        subtitle_label = ttk.Label(
+        subtitle_label = tk.Label(
             header_frame,
             text="Outil d'administration système - NordTransit Logistics",
-            font=("Segoe UI", 9)
+            font=('Arial', 10),
+            bg='#34495e',
+            fg='#ecf0f1'
         )
-        subtitle_label.pack(side=tk.LEFT, padx=20)
+        subtitle_label.pack()
         
-        # Notebook (onglets)
-        self.notebook = ttk.Notebook(self.root)
-        self.notebook.pack(fill=tk.BOTH, expand=True, padx=10, pady=(0, 10))
+        # Frame principal avec deux colonnes
+        main_frame = tk.Frame(self.root)
+        main_frame.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
         
-        # Création des onglets
-        self.create_diagnostic_tab()
-        self.create_backup_tab()
-        self.create_audit_tab()
-        self.create_logs_tab()
+        # Colonne gauche - Modules
+        left_frame = tk.Frame(main_frame, width=300)
+        left_frame.pack(side=tk.LEFT, fill=tk.Y, padx=(0, 10))
+        left_frame.pack_propagate(False)
+        
+        modules_label = ttk.Label(left_frame, text="MODULES", style='Title.TLabel')
+        modules_label.pack(pady=(0, 10))
+        
+        # Boutons des modules
+        self.create_module_buttons(left_frame)
+        
+        # Colonne droite - Console et résultats
+        right_frame = tk.Frame(main_frame)
+        right_frame.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+        
+        console_label = ttk.Label(right_frame, text="CONSOLE & RÉSULTATS", style='Title.TLabel')
+        console_label.pack(pady=(0, 10))
+        
+        # Zone de texte pour les résultats
+        self.console = scrolledtext.ScrolledText(
+            right_frame,
+            wrap=tk.WORD,
+            font=('Courier', 9),
+            bg='#2c3e50',
+            fg='#ecf0f1',
+            insertbackground='white'
+        )
+        self.console.pack(fill=tk.BOTH, expand=True)
         
         # Barre de statut
-        self.create_status_bar()
+        status_frame = tk.Frame(self.root, bg='#95a5a6', height=30)
+        status_frame.pack(fill=tk.X, side=tk.BOTTOM)
+        status_frame.pack_propagate(False)
+        
+        self.status_label = tk.Label(
+            status_frame,
+            text=f"Prêt - {datetime.now().strftime('%d/%m/%Y %H:%M:%S')}",
+            bg='#95a5a6',
+            fg='white',
+            font=('Arial', 9)
+        )
+        self.status_label.pack(side=tk.LEFT, padx=10, pady=5)
     
-    def create_diagnostic_tab(self):
-        """Crée l'onglet Diagnostic"""
-        tab = ttk.Frame(self.notebook, padding="20")
-        self.notebook.add(tab, text="🔍 Diagnostic")
-        
-        # Section AD/DNS
-        ad_frame = ttk.LabelFrame(tab, text="Vérification AD/DNS", padding="15")
-        ad_frame.pack(fill=tk.X, pady=(0, 15))
-        
-        ttk.Label(ad_frame, text="Adresse IP du contrôleur de domaine:").grid(row=0, column=0, sticky=tk.W, pady=5)
-        self.ad_ip_entry = ttk.Entry(ad_frame, width=30)
-        self.ad_ip_entry.grid(row=0, column=1, padx=10, pady=5)
-        self.ad_ip_entry.insert(0, "192.168.10.10")
+    def create_module_buttons(self, parent):
+        """Crée les boutons des modules"""
+        # Module Diagnostic
+        diag_frame = tk.LabelFrame(parent, text="Module Diagnostic", font=('Arial', 11, 'bold'), padx=10, pady=10)
+        diag_frame.pack(fill=tk.X, pady=(0, 10))
         
         ttk.Button(
-            ad_frame,
+            diag_frame,
             text="Vérifier AD/DNS",
-            command=self.run_ad_dns_check,
-            style="Accent.TButton"
-        ).grid(row=0, column=2, padx=5, pady=5)
-        
-        # Section MySQL
-        mysql_frame = ttk.LabelFrame(tab, text="Test Base de Données MySQL", padding="15")
-        mysql_frame.pack(fill=tk.X, pady=(0, 15))
-        
-        ttk.Label(mysql_frame, text="Hôte:").grid(row=0, column=0, sticky=tk.W, pady=5)
-        self.mysql_host_entry = ttk.Entry(mysql_frame, width=20)
-        self.mysql_host_entry.grid(row=0, column=1, padx=5, pady=5)
-        self.mysql_host_entry.insert(0, "192.168.10.21")
-        
-        ttk.Label(mysql_frame, text="Port:").grid(row=0, column=2, sticky=tk.W, padx=(15, 0), pady=5)
-        self.mysql_port_entry = ttk.Entry(mysql_frame, width=10)
-        self.mysql_port_entry.grid(row=0, column=3, padx=5, pady=5)
-        self.mysql_port_entry.insert(0, "3306")
-        
-        ttk.Label(mysql_frame, text="Base de données:").grid(row=1, column=0, sticky=tk.W, pady=5)
-        self.mysql_db_entry = ttk.Entry(mysql_frame, width=20)
-        self.mysql_db_entry.grid(row=1, column=1, padx=5, pady=5)
-        self.mysql_db_entry.insert(0, "wms_db")
-        
-        ttk.Label(mysql_frame, text="Utilisateur:").grid(row=1, column=2, sticky=tk.W, padx=(15, 0), pady=5)
-        self.mysql_user_entry = ttk.Entry(mysql_frame, width=20)
-        self.mysql_user_entry.grid(row=1, column=3, padx=5, pady=5)
-        self.mysql_user_entry.insert(0, "wms_user")
-        
-        ttk.Label(mysql_frame, text="Mot de passe:").grid(row=2, column=0, sticky=tk.W, pady=5)
-        self.mysql_pass_entry = ttk.Entry(mysql_frame, width=20, show="*")
-        self.mysql_pass_entry.grid(row=2, column=1, padx=5, pady=5)
+            command=self.check_ad_dns_dialog,
+            style='Action.TButton'
+        ).pack(fill=tk.X, pady=2)
         
         ttk.Button(
-            mysql_frame,
+            diag_frame,
             text="Tester MySQL",
-            command=self.run_mysql_check,
-            style="Accent.TButton"
-        ).grid(row=2, column=3, padx=5, pady=5)
-        
-        # Section Serveurs
-        server_frame = ttk.LabelFrame(tab, text="Diagnostic Serveur", padding="15")
-        server_frame.pack(fill=tk.X, pady=(0, 15))
-        
-        ttk.Label(server_frame, text="Adresse IP:").grid(row=0, column=0, sticky=tk.W, pady=5)
-        self.server_ip_entry = ttk.Entry(server_frame, width=30)
-        self.server_ip_entry.grid(row=0, column=1, padx=10, pady=5)
-        self.server_ip_entry.insert(0, "192.168.10.22")
+            command=self.check_mysql_dialog,
+            style='Action.TButton'
+        ).pack(fill=tk.X, pady=2)
         
         ttk.Button(
-            server_frame,
-            text="Diagnostic Windows",
-            command=self.run_windows_check
-        ).grid(row=0, column=2, padx=5, pady=5)
+            diag_frame,
+            text="État serveur Windows",
+            command=self.check_windows_dialog,
+            style='Action.TButton'
+        ).pack(fill=tk.X, pady=2)
         
         ttk.Button(
-            server_frame,
-            text="Diagnostic Linux",
-            command=self.run_linux_check
-        ).grid(row=0, column=3, padx=5, pady=5)
+            diag_frame,
+            text="État serveur Linux",
+            command=self.check_linux_dialog,
+            style='Action.TButton'
+        ).pack(fill=tk.X, pady=2)
         
         ttk.Button(
-            server_frame,
-            text="Diagnostic Complet",
+            diag_frame,
+            text="Tester connexion (ping)",
+            command=self.test_ping_dialog,
+            style='Action.TButton'
+        ).pack(fill=tk.X, pady=2)
+        
+        ttk.Button(
+            diag_frame,
+            text="Diagnostic complet",
             command=self.run_full_diagnostic,
-            style="Accent.TButton"
-        ).grid(row=0, column=4, padx=5, pady=5)
+            style='Action.TButton'
+        ).pack(fill=tk.X, pady=2)
         
-        # Zone de résultats
-        result_frame = ttk.LabelFrame(tab, text="Résultats", padding="10")
-        result_frame.pack(fill=tk.BOTH, expand=True)
-        
-        self.diagnostic_result = scrolledtext.ScrolledText(
-            result_frame,
-            wrap=tk.WORD,
-            font=("Consolas", 9),
-            height=15
-        )
-        self.diagnostic_result.pack(fill=tk.BOTH, expand=True)
-    
-    def create_backup_tab(self):
-        """Crée l'onglet Sauvegarde"""
-        tab = ttk.Frame(self.notebook, padding="20")
-        self.notebook.add(tab, text="💾 Sauvegarde")
-        
-        # Configuration MySQL
-        config_frame = ttk.LabelFrame(tab, text="Configuration MySQL", padding="15")
-        config_frame.pack(fill=tk.X, pady=(0, 15))
-        
-        ttk.Label(config_frame, text="Hôte:").grid(row=0, column=0, sticky=tk.W, pady=5)
-        self.backup_host_entry = ttk.Entry(config_frame, width=20)
-        self.backup_host_entry.grid(row=0, column=1, padx=5, pady=5)
-        self.backup_host_entry.insert(0, "192.168.10.21")
-        
-        ttk.Label(config_frame, text="Port:").grid(row=0, column=2, sticky=tk.W, padx=(15, 0), pady=5)
-        self.backup_port_entry = ttk.Entry(config_frame, width=10)
-        self.backup_port_entry.grid(row=0, column=3, padx=5, pady=5)
-        self.backup_port_entry.insert(0, "3306")
-        
-        ttk.Label(config_frame, text="Base de données:").grid(row=1, column=0, sticky=tk.W, pady=5)
-        self.backup_db_entry = ttk.Entry(config_frame, width=20)
-        self.backup_db_entry.grid(row=1, column=1, padx=5, pady=5)
-        self.backup_db_entry.insert(0, "wms_db")
-        
-        ttk.Label(config_frame, text="Utilisateur:").grid(row=1, column=2, sticky=tk.W, padx=(15, 0), pady=5)
-        self.backup_user_entry = ttk.Entry(config_frame, width=20)
-        self.backup_user_entry.grid(row=1, column=3, padx=5, pady=5)
-        self.backup_user_entry.insert(0, "wms_user")
-        
-        ttk.Label(config_frame, text="Mot de passe:").grid(row=2, column=0, sticky=tk.W, pady=5)
-        self.backup_pass_entry = ttk.Entry(config_frame, width=20, show="*")
-        self.backup_pass_entry.grid(row=2, column=1, padx=5, pady=5)
-        
-        # Actions de sauvegarde
-        action_frame = ttk.LabelFrame(tab, text="Actions de Sauvegarde", padding="15")
-        action_frame.pack(fill=tk.X, pady=(0, 15))
+        # Module Sauvegarde
+        backup_frame = tk.LabelFrame(parent, text="Module Sauvegarde WMS", font=('Arial', 11, 'bold'), padx=10, pady=10)
+        backup_frame.pack(fill=tk.X, pady=(0, 10))
         
         ttk.Button(
-            action_frame,
-            text="Sauvegarde Complète (SQL)",
-            command=self.run_full_backup,
-            style="Accent.TButton",
-            width=30
-        ).pack(pady=5)
-        
-        # Export de table
-        table_frame = ttk.Frame(action_frame)
-        table_frame.pack(fill=tk.X, pady=10)
-        
-        ttk.Label(table_frame, text="Nom de la table:").pack(side=tk.LEFT, padx=5)
-        self.table_name_entry = ttk.Entry(table_frame, width=25)
-        self.table_name_entry.pack(side=tk.LEFT, padx=5)
+            backup_frame,
+            text="Sauvegarde complète (SQL)",
+            command=self.backup_database_dialog,
+            style='Action.TButton'
+        ).pack(fill=tk.X, pady=2)
         
         ttk.Button(
-            table_frame,
-            text="Export CSV",
-            command=self.run_table_export
-        ).pack(side=tk.LEFT, padx=5)
+            backup_frame,
+            text="Export table (CSV)",
+            command=self.export_table_dialog,
+            style='Action.TButton'
+        ).pack(fill=tk.X, pady=2)
         
         ttk.Button(
-            action_frame,
-            text="Sauvegarde Toutes les Tables",
-            command=self.run_all_tables_backup,
-            width=30
-        ).pack(pady=5)
+            backup_frame,
+            text="Sauvegarde automatique",
+            command=self.backup_all_dialog,
+            style='Action.TButton'
+        ).pack(fill=tk.X, pady=2)
         
-        # Zone de résultats
-        result_frame = ttk.LabelFrame(tab, text="Résultats", padding="10")
-        result_frame.pack(fill=tk.BOTH, expand=True)
-        
-        self.backup_result = scrolledtext.ScrolledText(
-            result_frame,
-            wrap=tk.WORD,
-            font=("Consolas", 9),
-            height=15
-        )
-        self.backup_result.pack(fill=tk.BOTH, expand=True)
-    
-    def create_audit_tab(self):
-        """Crée l'onglet Audit"""
-        tab = ttk.Frame(self.notebook, padding="20")
-        self.notebook.add(tab, text="📊 Audit EOL")
-        
-        # Scan réseau
-        scan_frame = ttk.LabelFrame(tab, text="Scan Réseau", padding="15")
-        scan_frame.pack(fill=tk.X, pady=(0, 15))
-        
-        ttk.Label(scan_frame, text="Plage réseau (ex: 192.168.10.0/24):").grid(row=0, column=0, sticky=tk.W, pady=5)
-        self.network_entry = ttk.Entry(scan_frame, width=30)
-        self.network_entry.grid(row=0, column=1, padx=10, pady=5)
-        self.network_entry.insert(0, "192.168.10.0/24")
+        # Module Audit
+        audit_frame = tk.LabelFrame(parent, text="Module Audit d'obsolescence", font=('Arial', 11, 'bold'), padx=10, pady=10)
+        audit_frame.pack(fill=tk.X, pady=(0, 10))
         
         ttk.Button(
-            scan_frame,
-            text="Scanner le Réseau",
-            command=self.run_network_scan,
-            style="Accent.TButton"
-        ).grid(row=0, column=2, padx=5, pady=5)
-        
-        # Vérification EOL
-        eol_frame = ttk.LabelFrame(tab, text="Vérification EOL", padding="15")
-        eol_frame.pack(fill=tk.X, pady=(0, 15))
-        
-        ttk.Label(eol_frame, text="Nom de l'OS:").grid(row=0, column=0, sticky=tk.W, pady=5)
-        self.os_name_entry = ttk.Entry(eol_frame, width=30)
-        self.os_name_entry.grid(row=0, column=1, padx=10, pady=5)
-        self.os_name_entry.insert(0, "Windows Server 2012")
+            audit_frame,
+            text="Scanner réseau",
+            command=self.scan_network_dialog,
+            style='Action.TButton'
+        ).pack(fill=tk.X, pady=2)
         
         ttk.Button(
-            eol_frame,
-            text="Vérifier EOL",
-            command=self.run_eol_check
-        ).grid(row=0, column=2, padx=5, pady=5)
-        
-        # Analyse CSV
-        csv_frame = ttk.LabelFrame(tab, text="Analyse Inventaire CSV", padding="15")
-        csv_frame.pack(fill=tk.X, pady=(0, 15))
-        
-        ttk.Label(csv_frame, text="Fichier CSV:").grid(row=0, column=0, sticky=tk.W, pady=5)
-        self.csv_path_entry = ttk.Entry(csv_frame, width=40)
-        self.csv_path_entry.grid(row=0, column=1, padx=10, pady=5)
+            audit_frame,
+            text="Vérifier dates EOL",
+            command=self.check_eol_dialog,
+            style='Action.TButton'
+        ).pack(fill=tk.X, pady=2)
         
         ttk.Button(
-            csv_frame,
-            text="Parcourir...",
-            command=self.browse_csv_file
-        ).grid(row=0, column=2, padx=5, pady=5)
-        
-        ttk.Button(
-            csv_frame,
+            audit_frame,
             text="Analyser CSV",
-            command=self.run_csv_analysis,
-            style="Accent.TButton"
-        ).grid(row=0, column=3, padx=5, pady=5)
-        
-        # Rapport complet
-        report_frame = ttk.LabelFrame(tab, text="Rapport Complet", padding="15")
-        report_frame.pack(fill=tk.X, pady=(0, 15))
+            command=self.analyze_csv_dialog,
+            style='Action.TButton'
+        ).pack(fill=tk.X, pady=2)
         
         ttk.Button(
-            report_frame,
-            text="Générer Rapport Complet d'Obsolescence",
-            command=self.run_full_report,
-            style="Accent.TButton",
-            width=40
-        ).pack(pady=5)
+            audit_frame,
+            text="Rapport complet",
+            command=self.generate_report_dialog,
+            style='Action.TButton'
+        ).pack(fill=tk.X, pady=2)
         
-        # Zone de résultats
-        result_frame = ttk.LabelFrame(tab, text="Résultats", padding="10")
-        result_frame.pack(fill=tk.BOTH, expand=True)
-        
-        self.audit_result = scrolledtext.ScrolledText(
-            result_frame,
-            wrap=tk.WORD,
-            font=("Consolas", 9),
-            height=15
-        )
-        self.audit_result.pack(fill=tk.BOTH, expand=True)
-    
-    def create_logs_tab(self):
-        """Crée l'onglet Logs"""
-        tab = ttk.Frame(self.notebook, padding="20")
-        self.notebook.add(tab, text="📝 Logs")
-        
-        # Barre d'outils
-        toolbar = ttk.Frame(tab)
-        toolbar.pack(fill=tk.X, pady=(0, 10))
+        # Boutons utilitaires
+        utils_frame = tk.Frame(parent)
+        utils_frame.pack(fill=tk.X, pady=(10, 0))
         
         ttk.Button(
-            toolbar,
-            text="Rafraîchir",
-            command=self.refresh_logs
-        ).pack(side=tk.LEFT, padx=5)
+            utils_frame,
+            text="Effacer console",
+            command=self.clear_console
+        ).pack(fill=tk.X, pady=2)
         
         ttk.Button(
-            toolbar,
-            text="Effacer l'affichage",
-            command=self.clear_log_display
-        ).pack(side=tk.LEFT, padx=5)
-        
-        # Zone de logs
-        self.log_display = scrolledtext.ScrolledText(
-            tab,
-            wrap=tk.WORD,
-            font=("Consolas", 9),
-            height=30
-        )
-        self.log_display.pack(fill=tk.BOTH, expand=True)
-        
-        # Configuration des tags de couleur
-        self.log_display.tag_config("info", foreground="#0066cc")
-        self.log_display.tag_config("success", foreground="#28a745")
-        self.log_display.tag_config("warning", foreground="#ffc107")
-        self.log_display.tag_config("error", foreground="#dc3545")
+            utils_frame,
+            text="Quitter",
+            command=self.quit_app
+        ).pack(fill=tk.X, pady=2)
     
-    def create_status_bar(self):
-        """Crée la barre de statut"""
-        self.status_bar = ttk.Label(
-            self.root,
-            text="Prêt",
-            relief=tk.SUNKEN,
-            anchor=tk.W,
-            padding="5"
-        )
-        self.status_bar.pack(side=tk.BOTTOM, fill=tk.X)
+    def log_to_console(self, message, level="INFO"):
+        """Affiche un message dans la console"""
+        timestamp = datetime.now().strftime('%H:%M:%S')
+        color_tag = {
+            "INFO": "info",
+            "SUCCESS": "success",
+            "WARNING": "warning",
+            "ERROR": "error"
+        }.get(level, "info")
+        
+        self.console.tag_config("info", foreground="#3498db")
+        self.console.tag_config("success", foreground="#2ecc71")
+        self.console.tag_config("warning", foreground="#f39c12")
+        self.console.tag_config("error", foreground="#e74c3c")
+        
+        self.console.insert(tk.END, f"[{timestamp}] ", "info")
+        self.console.insert(tk.END, f"{message}\n", color_tag)
+        self.console.see(tk.END)
+        self.root.update()
     
-    # Méthodes pour les actions Diagnostic
+    def clear_console(self):
+        """Efface la console"""
+        self.console.delete(1.0, tk.END)
+        self.log_to_console("Console effacée")
     
-    def run_ad_dns_check(self):
-        """Lance la vérification AD/DNS"""
-        server_ip = self.ad_ip_entry.get().strip()
-        if not server_ip:
-            messagebox.showwarning("Attention", "Veuillez saisir une adresse IP")
-            return
-        
-        self.diagnostic_result.delete(1.0, tk.END)
-        self.diagnostic_result.insert(tk.END, f"🔍 Vérification AD/DNS sur {server_ip}...\n\n")
-        self.update_status("Vérification AD/DNS en cours...")
-        
-        def task():
-            try:
-                result = self.diagnostic.check_ad_dns(server_ip)
-                self.root.after(0, lambda: self.display_diagnostic_result(result))
-                self.root.after(0, lambda: self.update_status("Vérification AD/DNS terminée"))
-            except Exception as e:
-                self.root.after(0, lambda: self.log_message(f"❌ Erreur: {e}", "error"))
-                self.root.after(0, lambda: self.update_status("Erreur lors de la vérification"))
-        
-        threading.Thread(target=task, daemon=True).start()
+    def update_status(self, message):
+        """Met à jour la barre de statut"""
+        self.status_label.config(text=f"{message} - {datetime.now().strftime('%H:%M:%S')}")
     
-    def run_mysql_check(self):
-        """Lance le test MySQL"""
-        host = self.mysql_host_entry.get().strip()
-        port = self.mysql_port_entry.get().strip()
-        database = self.mysql_db_entry.get().strip()
-        user = self.mysql_user_entry.get().strip()
-        password = self.mysql_pass_entry.get()
-        
-        if not all([host, port, database, user]):
-            messagebox.showwarning("Attention", "Veuillez remplir tous les champs")
-            return
-        
-        self.diagnostic_result.delete(1.0, tk.END)
-        self.diagnostic_result.insert(tk.END, f"🔍 Test MySQL sur {host}:{port}...\n\n")
-        self.update_status("Test MySQL en cours...")
-        
-        def task():
-            try:
-                result = self.diagnostic.check_mysql(host, int(port), database, user, password)
-                self.root.after(0, lambda: self.display_diagnostic_result(result))
-                self.root.after(0, lambda: self.update_status("Test MySQL terminé"))
-            except Exception as e:
-                self.root.after(0, lambda: self.log_message(f"❌ Erreur: {e}", "error"))
-                self.root.after(0, lambda: self.update_status("Erreur lors du test"))
-        
-        threading.Thread(target=task, daemon=True).start()
+    def run_in_thread(self, func, *args):
+        """Exécute une fonction dans un thread séparé"""
+        thread = threading.Thread(target=func, args=args, daemon=True)
+        thread.start()
     
-    def run_windows_check(self):
-        """Lance le diagnostic Windows"""
-        server_ip = self.server_ip_entry.get().strip()
-        if not server_ip:
-            messagebox.showwarning("Attention", "Veuillez saisir une adresse IP")
-            return
+    # Dialogues pour le module Diagnostic
+    def check_ad_dns_dialog(self):
+        """Dialogue pour vérifier AD/DNS"""
+        dialog = tk.Toplevel(self.root)
+        dialog.title("Vérifier AD/DNS")
+        dialog.geometry("400x150")
+        dialog.transient(self.root)
+        dialog.grab_set()
         
-        self.diagnostic_result.delete(1.0, tk.END)
-        self.diagnostic_result.insert(tk.END, f"🔍 Diagnostic Windows sur {server_ip}...\n\n")
-        self.update_status("Diagnostic Windows en cours...")
+        tk.Label(dialog, text="Adresse IP du contrôleur de domaine:", font=('Arial', 10)).pack(pady=10)
+        server_entry = tk.Entry(dialog, width=30, font=('Arial', 10))
+        server_entry.pack(pady=5)
+        server_entry.insert(0, "192.168.10.10")
         
-        def task():
-            try:
-                result = self.diagnostic.check_windows_server(server_ip)
-                self.root.after(0, lambda: self.display_diagnostic_result(result))
-                self.root.after(0, lambda: self.update_status("Diagnostic Windows terminé"))
-            except Exception as e:
-                self.root.after(0, lambda: self.log_message(f"❌ Erreur: {e}", "error"))
-                self.root.after(0, lambda: self.update_status("Erreur lors du diagnostic"))
+        def execute():
+            server = server_entry.get().strip()
+            if server:
+                dialog.destroy()
+                self.log_to_console(f"Vérification AD/DNS sur {server}...", "INFO")
+                self.update_status("Vérification AD/DNS en cours...")
+                self.run_in_thread(self.diagnostic.check_ad_dns, server)
+                self.log_to_console("Vérification AD/DNS terminée", "SUCCESS")
+                self.update_status("Prêt")
+            else:
+                messagebox.showwarning("Erreur", "Veuillez saisir une adresse IP")
         
-        threading.Thread(target=task, daemon=True).start()
+        tk.Button(dialog, text="Vérifier", command=execute, bg='#3498db', fg='white', font=('Arial', 10)).pack(pady=10)
     
-    def run_linux_check(self):
-        """Lance le diagnostic Linux"""
-        server_ip = self.server_ip_entry.get().strip()
-        if not server_ip:
-            messagebox.showwarning("Attention", "Veuillez saisir une adresse IP")
-            return
+    def check_mysql_dialog(self):
+        """Dialogue pour tester MySQL"""
+        dialog = tk.Toplevel(self.root)
+        dialog.title("Tester MySQL")
+        dialog.geometry("400x300")
+        dialog.transient(self.root)
+        dialog.grab_set()
         
-        self.diagnostic_result.delete(1.0, tk.END)
-        self.diagnostic_result.insert(tk.END, f"🔍 Diagnostic Linux sur {server_ip}...\n\n")
-        self.update_status("Diagnostic Linux en cours...")
+        tk.Label(dialog, text="Adresse IP:", font=('Arial', 10)).pack(pady=5)
+        host_entry = tk.Entry(dialog, width=30, font=('Arial', 10))
+        host_entry.pack()
+        host_entry.insert(0, "192.168.10.21")
         
-        def task():
-            try:
-                result = self.diagnostic.check_linux_server(server_ip, "admin")
-                self.root.after(0, lambda: self.display_diagnostic_result(result))
-                self.root.after(0, lambda: self.update_status("Diagnostic Linux terminé"))
-            except Exception as e:
-                self.root.after(0, lambda: self.log_message(f"❌ Erreur: {e}", "error"))
-                self.root.after(0, lambda: self.update_status("Erreur lors du diagnostic"))
+        tk.Label(dialog, text="Port:", font=('Arial', 10)).pack(pady=5)
+        port_entry = tk.Entry(dialog, width=30, font=('Arial', 10))
+        port_entry.pack()
+        port_entry.insert(0, "3306")
         
-        threading.Thread(target=task, daemon=True).start()
+        tk.Label(dialog, text="Base de données:", font=('Arial', 10)).pack(pady=5)
+        db_entry = tk.Entry(dialog, width=30, font=('Arial', 10))
+        db_entry.pack()
+        db_entry.insert(0, "wms_db")
+        
+        tk.Label(dialog, text="Utilisateur:", font=('Arial', 10)).pack(pady=5)
+        user_entry = tk.Entry(dialog, width=30, font=('Arial', 10))
+        user_entry.pack()
+        user_entry.insert(0, "wms_user")
+        
+        tk.Label(dialog, text="Mot de passe:", font=('Arial', 10)).pack(pady=5)
+        pass_entry = tk.Entry(dialog, width=30, font=('Arial', 10), show='*')
+        pass_entry.pack()
+        
+        def execute():
+            host = host_entry.get().strip()
+            port = port_entry.get().strip()
+            database = db_entry.get().strip()
+            user = user_entry.get().strip()
+            password = pass_entry.get().strip()
+            
+            if all([host, port, database, user, password]):
+                dialog.destroy()
+                self.log_to_console(f"Test MySQL sur {host}:{port}...", "INFO")
+                self.update_status("Test MySQL en cours...")
+                self.run_in_thread(self.diagnostic.check_mysql, host, int(port), database, user, password)
+                self.log_to_console("Test MySQL terminé", "SUCCESS")
+                self.update_status("Prêt")
+            else:
+                messagebox.showwarning("Erreur", "Veuillez remplir tous les champs")
+        
+        tk.Button(dialog, text="Tester", command=execute, bg='#3498db', fg='white', font=('Arial', 10)).pack(pady=10)
+    
+    def check_windows_dialog(self):
+        """Dialogue pour vérifier un serveur Windows"""
+        dialog = tk.Toplevel(self.root)
+        dialog.title("État serveur Windows")
+        dialog.geometry("400x150")
+        dialog.transient(self.root)
+        dialog.grab_set()
+        
+        tk.Label(dialog, text="Adresse IP du serveur Windows:", font=('Arial', 10)).pack(pady=10)
+        server_entry = tk.Entry(dialog, width=30, font=('Arial', 10))
+        server_entry.pack(pady=5)
+        server_entry.insert(0, "192.168.10.10")
+        
+        def execute():
+            server = server_entry.get().strip()
+            if server:
+                dialog.destroy()
+                self.log_to_console(f"Vérification serveur Windows {server}...", "INFO")
+                self.update_status("Vérification Windows en cours...")
+                self.run_in_thread(self.diagnostic.check_windows_server, server)
+                self.log_to_console("Vérification Windows terminée", "SUCCESS")
+                self.update_status("Prêt")
+            else:
+                messagebox.showwarning("Erreur", "Veuillez saisir une adresse IP")
+        
+        tk.Button(dialog, text="Vérifier", command=execute, bg='#3498db', fg='white', font=('Arial', 10)).pack(pady=10)
+    
+    def check_linux_dialog(self):
+        """Dialogue pour vérifier un serveur Linux"""
+        dialog = tk.Toplevel(self.root)
+        dialog.title("État serveur Linux")
+        dialog.geometry("400x250")
+        dialog.transient(self.root)
+        dialog.grab_set()
+        
+        tk.Label(dialog, text="Adresse IP du serveur Linux:", font=('Arial', 10)).pack(pady=5)
+        server_entry = tk.Entry(dialog, width=30, font=('Arial', 10))
+        server_entry.pack()
+        server_entry.insert(0, "192.168.10.21")
+        
+        tk.Label(dialog, text="Utilisateur SSH:", font=('Arial', 10)).pack(pady=5)
+        user_entry = tk.Entry(dialog, width=30, font=('Arial', 10))
+        user_entry.pack()
+        user_entry.insert(0, "admin")
+        
+        tk.Label(dialog, text="Mot de passe SSH:", font=('Arial', 10)).pack(pady=5)
+        pass_entry = tk.Entry(dialog, width=30, font=('Arial', 10), show='*')
+        pass_entry.pack()
+        
+        def execute():
+            server = server_entry.get().strip()
+            user = user_entry.get().strip()
+            password = pass_entry.get().strip() or None
+            
+            if server and user:
+                dialog.destroy()
+                self.log_to_console(f"Vérification serveur Linux {server}...", "INFO")
+                self.update_status("Vérification Linux en cours...")
+                self.run_in_thread(self.diagnostic.check_linux_server, server, user, password)
+                self.log_to_console("Vérification Linux terminée", "SUCCESS")
+                self.update_status("Prêt")
+            else:
+                messagebox.showwarning("Erreur", "Veuillez remplir les champs obligatoires")
+        
+        tk.Button(dialog, text="Vérifier", command=execute, bg='#3498db', fg='white', font=('Arial', 10)).pack(pady=10)
     
     def run_full_diagnostic(self):
-        """Lance le diagnostic complet"""
-        self.diagnostic_result.delete(1.0, tk.END)
-        self.diagnostic_result.insert(tk.END, "🔍 Diagnostic complet en cours...\n\n")
-        self.update_status("Diagnostic complet en cours...")
-        
-        def task():
-            try:
-                results = self.diagnostic.run_full_diagnostic()
-                self.root.after(0, lambda: self.display_full_diagnostic_results(results))
-                self.root.after(0, lambda: self.update_status("Diagnostic complet terminé"))
-            except Exception as e:
-                self.root.after(0, lambda: self.log_message(f"❌ Erreur: {e}", "error"))
-                self.root.after(0, lambda: self.update_status("Erreur lors du diagnostic"))
-        
-        threading.Thread(target=task, daemon=True).start()
+        """Lance un diagnostic complet"""
+        if messagebox.askyesno("Confirmation", "Lancer un diagnostic complet de tous les systèmes ?"):
+            self.log_to_console("Lancement du diagnostic complet...", "INFO")
+            self.update_status("Diagnostic complet en cours...")
+            self.run_in_thread(self.diagnostic.run_full_diagnostic)
+            self.log_to_console("Diagnostic complet terminé", "SUCCESS")
+            self.update_status("Prêt")
     
-    # Méthodes pour les actions Sauvegarde
+    def test_ping_dialog(self):
+        """Dialogue pour tester un ping"""
+        dialog = tk.Toplevel(self.root)
+        dialog.title("Tester connexion (ping)")
+        dialog.geometry("400x150")
+        dialog.transient(self.root)
+        dialog.grab_set()
+        
+        tk.Label(dialog, text="Adresse IP ou nom d'hôte:", font=('Arial', 10)).pack(pady=10)
+        host_entry = tk.Entry(dialog, width=30, font=('Arial', 10))
+        host_entry.pack(pady=5)
+        host_entry.insert(0, "192.168.10.1")
+        
+        def execute():
+            host = host_entry.get().strip()
+            if host:
+                dialog.destroy()
+                self.log_to_console(f"Test ping vers {host}...", "INFO")
+                self.update_status("Test ping en cours...")
+                self.run_in_thread(self.diagnostic.test_ping, host)
+                self.log_to_console("Test ping terminé", "SUCCESS")
+                self.update_status("Prêt")
+            else:
+                messagebox.showwarning("Erreur", "Veuillez saisir une adresse IP ou un nom d'hôte")
+        
+        tk.Button(dialog, text="Tester", command=execute, bg='#3498db', fg='white', font=('Arial', 10)).pack(pady=10)
     
-    def run_full_backup(self):
-        """Lance une sauvegarde complète"""
-        host = self.backup_host_entry.get().strip()
-        port = self.backup_port_entry.get().strip()
-        database = self.backup_db_entry.get().strip()
-        user = self.backup_user_entry.get().strip()
-        password = self.backup_pass_entry.get()
+    # Dialogues pour le module Sauvegarde
+    def backup_database_dialog(self):
+        """Dialogue pour sauvegarder la base de données"""
+        dialog = tk.Toplevel(self.root)
+        dialog.title("Sauvegarde complète")
+        dialog.geometry("400x300")
+        dialog.transient(self.root)
+        dialog.grab_set()
         
-        if not all([host, port, database, user]):
-            messagebox.showwarning("Attention", "Veuillez remplir tous les champs")
-            return
+        tk.Label(dialog, text="Adresse IP:", font=('Arial', 10)).pack(pady=5)
+        host_entry = tk.Entry(dialog, width=30, font=('Arial', 10))
+        host_entry.pack()
+        host_entry.insert(0, "192.168.10.21")
         
-        self.backup_result.delete(1.0, tk.END)
-        self.backup_result.insert(tk.END, f"💾 Sauvegarde complète de {database}...\n\n")
-        self.update_status("Sauvegarde en cours...")
+        tk.Label(dialog, text="Port:", font=('Arial', 10)).pack(pady=5)
+        port_entry = tk.Entry(dialog, width=30, font=('Arial', 10))
+        port_entry.pack()
+        port_entry.insert(0, "3306")
         
-        def task():
-            try:
-                result = self.backup.backup_database(host, int(port), database, user, password)
-                self.root.after(0, lambda: self.display_backup_result(result))
-                self.root.after(0, lambda: self.update_status("Sauvegarde terminée"))
-            except Exception as e:
-                self.root.after(0, lambda: self.log_message(f"❌ Erreur: {e}", "error"))
-                self.root.after(0, lambda: self.update_status("Erreur lors de la sauvegarde"))
+        tk.Label(dialog, text="Base de données:", font=('Arial', 10)).pack(pady=5)
+        db_entry = tk.Entry(dialog, width=30, font=('Arial', 10))
+        db_entry.pack()
+        db_entry.insert(0, "wms_db")
         
-        threading.Thread(target=task, daemon=True).start()
+        tk.Label(dialog, text="Utilisateur:", font=('Arial', 10)).pack(pady=5)
+        user_entry = tk.Entry(dialog, width=30, font=('Arial', 10))
+        user_entry.pack()
+        user_entry.insert(0, "wms_user")
+        
+        tk.Label(dialog, text="Mot de passe:", font=('Arial', 10)).pack(pady=5)
+        pass_entry = tk.Entry(dialog, width=30, font=('Arial', 10), show='*')
+        pass_entry.pack()
+        
+        def execute():
+            host = host_entry.get().strip()
+            port = port_entry.get().strip()
+            database = db_entry.get().strip()
+            user = user_entry.get().strip()
+            password = pass_entry.get().strip()
+            
+            if all([host, port, database, user, password]):
+                dialog.destroy()
+                self.log_to_console(f"Sauvegarde de {database} en cours...", "INFO")
+                self.update_status("Sauvegarde en cours...")
+                self.run_in_thread(self.backup.backup_database, host, int(port), database, user, password)
+                self.log_to_console("Sauvegarde terminée", "SUCCESS")
+                self.update_status("Prêt")
+            else:
+                messagebox.showwarning("Erreur", "Veuillez remplir tous les champs")
+        
+        tk.Button(dialog, text="Sauvegarder", command=execute, bg='#2ecc71', fg='white', font=('Arial', 10)).pack(pady=10)
     
-    def run_table_export(self):
-        """Lance l'export d'une table"""
-        host = self.backup_host_entry.get().strip()
-        port = self.backup_port_entry.get().strip()
-        database = self.backup_db_entry.get().strip()
-        table = self.table_name_entry.get().strip()
-        user = self.backup_user_entry.get().strip()
-        password = self.backup_pass_entry.get()
+    def export_table_dialog(self):
+        """Dialogue pour exporter une table"""
+        dialog = tk.Toplevel(self.root)
+        dialog.title("Export table CSV")
+        dialog.geometry("400x350")
+        dialog.transient(self.root)
+        dialog.grab_set()
         
-        if not all([host, port, database, table, user]):
-            messagebox.showwarning("Attention", "Veuillez remplir tous les champs")
-            return
+        tk.Label(dialog, text="Adresse IP:", font=('Arial', 10)).pack(pady=5)
+        host_entry = tk.Entry(dialog, width=30, font=('Arial', 10))
+        host_entry.pack()
+        host_entry.insert(0, "192.168.10.21")
         
-        self.backup_result.delete(1.0, tk.END)
-        self.backup_result.insert(tk.END, f"💾 Export de la table {table}...\n\n")
-        self.update_status("Export en cours...")
+        tk.Label(dialog, text="Port:", font=('Arial', 10)).pack(pady=5)
+        port_entry = tk.Entry(dialog, width=30, font=('Arial', 10))
+        port_entry.pack()
+        port_entry.insert(0, "3306")
         
-        def task():
-            try:
-                result = self.backup.export_table_csv(host, int(port), database, table, user, password)
-                self.root.after(0, lambda: self.display_backup_result(result))
-                self.root.after(0, lambda: self.update_status("Export terminé"))
-            except Exception as e:
-                self.root.after(0, lambda: self.log_message(f"❌ Erreur: {e}", "error"))
-                self.root.after(0, lambda: self.update_status("Erreur lors de l'export"))
+        tk.Label(dialog, text="Base de données:", font=('Arial', 10)).pack(pady=5)
+        db_entry = tk.Entry(dialog, width=30, font=('Arial', 10))
+        db_entry.pack()
+        db_entry.insert(0, "wms_db")
         
-        threading.Thread(target=task, daemon=True).start()
+        tk.Label(dialog, text="Table:", font=('Arial', 10)).pack(pady=5)
+        table_entry = tk.Entry(dialog, width=30, font=('Arial', 10))
+        table_entry.pack()
+        
+        tk.Label(dialog, text="Utilisateur:", font=('Arial', 10)).pack(pady=5)
+        user_entry = tk.Entry(dialog, width=30, font=('Arial', 10))
+        user_entry.pack()
+        user_entry.insert(0, "wms_user")
+        
+        tk.Label(dialog, text="Mot de passe:", font=('Arial', 10)).pack(pady=5)
+        pass_entry = tk.Entry(dialog, width=30, font=('Arial', 10), show='*')
+        pass_entry.pack()
+        
+        def execute():
+            host = host_entry.get().strip()
+            port = port_entry.get().strip()
+            database = db_entry.get().strip()
+            table = table_entry.get().strip()
+            user = user_entry.get().strip()
+            password = pass_entry.get().strip()
+            
+            if all([host, port, database, table, user, password]):
+                dialog.destroy()
+                self.log_to_console(f"Export de la table {table} en cours...", "INFO")
+                self.update_status("Export en cours...")
+                self.run_in_thread(self.backup.export_table_csv, host, int(port), database, table, user, password)
+                self.log_to_console("Export terminé", "SUCCESS")
+                self.update_status("Prêt")
+            else:
+                messagebox.showwarning("Erreur", "Veuillez remplir tous les champs")
+        
+        tk.Button(dialog, text="Exporter", command=execute, bg='#2ecc71', fg='white', font=('Arial', 10)).pack(pady=10)
     
-    def run_all_tables_backup(self):
-        """Lance la sauvegarde de toutes les tables"""
-        host = self.backup_host_entry.get().strip()
-        port = self.backup_port_entry.get().strip()
-        database = self.backup_db_entry.get().strip()
-        user = self.backup_user_entry.get().strip()
-        password = self.backup_pass_entry.get()
+    def backup_all_dialog(self):
+        """Dialogue pour sauvegarder toutes les tables"""
+        dialog = tk.Toplevel(self.root)
+        dialog.title("Sauvegarde automatique")
+        dialog.geometry("400x300")
+        dialog.transient(self.root)
+        dialog.grab_set()
         
-        if not all([host, port, database, user]):
-            messagebox.showwarning("Attention", "Veuillez remplir tous les champs")
-            return
+        tk.Label(dialog, text="Adresse IP:", font=('Arial', 10)).pack(pady=5)
+        host_entry = tk.Entry(dialog, width=30, font=('Arial', 10))
+        host_entry.pack()
+        host_entry.insert(0, "192.168.10.21")
         
-        self.backup_result.delete(1.0, tk.END)
-        self.backup_result.insert(tk.END, f"💾 Sauvegarde de toutes les tables...\n\n")
-        self.update_status("Sauvegarde en cours...")
+        tk.Label(dialog, text="Port:", font=('Arial', 10)).pack(pady=5)
+        port_entry = tk.Entry(dialog, width=30, font=('Arial', 10))
+        port_entry.pack()
+        port_entry.insert(0, "3306")
         
-        def task():
-            try:
-                result = self.backup.backup_all_tables(host, int(port), database, user, password)
-                self.root.after(0, lambda: self.display_backup_result(result))
-                self.root.after(0, lambda: self.update_status("Sauvegarde terminée"))
-            except Exception as e:
-                self.root.after(0, lambda: self.log_message(f"❌ Erreur: {e}", "error"))
-                self.root.after(0, lambda: self.update_status("Erreur lors de la sauvegarde"))
+        tk.Label(dialog, text="Base de données:", font=('Arial', 10)).pack(pady=5)
+        db_entry = tk.Entry(dialog, width=30, font=('Arial', 10))
+        db_entry.pack()
+        db_entry.insert(0, "wms_db")
         
-        threading.Thread(target=task, daemon=True).start()
+        tk.Label(dialog, text="Utilisateur:", font=('Arial', 10)).pack(pady=5)
+        user_entry = tk.Entry(dialog, width=30, font=('Arial', 10))
+        user_entry.pack()
+        user_entry.insert(0, "wms_user")
+        
+        tk.Label(dialog, text="Mot de passe:", font=('Arial', 10)).pack(pady=5)
+        pass_entry = tk.Entry(dialog, width=30, font=('Arial', 10), show='*')
+        pass_entry.pack()
+        
+        def execute():
+            host = host_entry.get().strip()
+            port = port_entry.get().strip()
+            database = db_entry.get().strip()
+            user = user_entry.get().strip()
+            password = pass_entry.get().strip()
+            
+            if all([host, port, database, user, password]):
+                dialog.destroy()
+                self.log_to_console(f"Sauvegarde automatique de toutes les tables...", "INFO")
+                self.update_status("Sauvegarde automatique en cours...")
+                self.run_in_thread(self.backup.backup_all_tables, host, int(port), database, user, password)
+                self.log_to_console("Sauvegarde automatique terminée", "SUCCESS")
+                self.update_status("Prêt")
+            else:
+                messagebox.showwarning("Erreur", "Veuillez remplir tous les champs")
+        
+        tk.Button(dialog, text="Sauvegarder tout", command=execute, bg='#2ecc71', fg='white', font=('Arial', 10)).pack(pady=10)
     
-    # Méthodes pour les actions Audit
+    # Dialogues pour le module Audit
+    def scan_network_dialog(self):
+        """Dialogue pour scanner le réseau"""
+        dialog = tk.Toplevel(self.root)
+        dialog.title("Scanner réseau")
+        dialog.geometry("400x150")
+        dialog.transient(self.root)
+        dialog.grab_set()
+        
+        tk.Label(dialog, text="Plage réseau (ex: 192.168.10.0/24):", font=('Arial', 10)).pack(pady=10)
+        network_entry = tk.Entry(dialog, width=30, font=('Arial', 10))
+        network_entry.pack(pady=5)
+        network_entry.insert(0, "192.168.10.0/24")
+        
+        def execute():
+            network = network_entry.get().strip()
+            if network:
+                dialog.destroy()
+                self.log_to_console(f"Scan du réseau {network}...", "INFO")
+                self.update_status("Scan réseau en cours...")
+                self.run_in_thread(self.audit.scan_network, network)
+                self.log_to_console("Scan réseau terminé", "SUCCESS")
+                self.update_status("Prêt")
+            else:
+                messagebox.showwarning("Erreur", "Veuillez saisir une plage réseau")
+        
+        tk.Button(dialog, text="Scanner", command=execute, bg='#e67e22', fg='white', font=('Arial', 10)).pack(pady=10)
     
-    def run_network_scan(self):
-        """Lance le scan réseau"""
-        network = self.network_entry.get().strip()
-        if not network:
-            messagebox.showwarning("Attention", "Veuillez saisir une plage réseau")
-            return
+    def check_eol_dialog(self):
+        """Dialogue pour vérifier les dates EOL"""
+        dialog = tk.Toplevel(self.root)
+        dialog.title("Vérifier dates EOL")
+        dialog.geometry("400x150")
+        dialog.transient(self.root)
+        dialog.grab_set()
         
-        self.audit_result.delete(1.0, tk.END)
-        self.audit_result.insert(tk.END, f"🔍 Scan du réseau {network}...\n\n")
-        self.update_status("Scan réseau en cours...")
+        tk.Label(dialog, text="Nom de l'OS (ex: Windows Server 2012):", font=('Arial', 10)).pack(pady=10)
+        os_entry = tk.Entry(dialog, width=30, font=('Arial', 10))
+        os_entry.pack(pady=5)
         
-        def task():
-            try:
-                result = self.audit.scan_network(network)
-                self.root.after(0, lambda: self.display_audit_result(result))
-                self.root.after(0, lambda: self.update_status("Scan réseau terminé"))
-            except Exception as e:
-                self.root.after(0, lambda: self.log_message(f"❌ Erreur: {e}", "error"))
-                self.root.after(0, lambda: self.update_status("Erreur lors du scan"))
+        def execute():
+            os_name = os_entry.get().strip()
+            if os_name:
+                dialog.destroy()
+                self.log_to_console(f"Vérification EOL pour {os_name}...", "INFO")
+                self.update_status("Vérification EOL en cours...")
+                self.run_in_thread(self.audit.check_eol_dates, os_name)
+                self.log_to_console("Vérification EOL terminée", "SUCCESS")
+                self.update_status("Prêt")
+            else:
+                messagebox.showwarning("Erreur", "Veuillez saisir un nom d'OS")
         
-        threading.Thread(target=task, daemon=True).start()
+        tk.Button(dialog, text="Vérifier", command=execute, bg='#e67e22', fg='white', font=('Arial', 10)).pack(pady=10)
     
-    def run_eol_check(self):
-        """Lance la vérification EOL"""
-        os_name = self.os_name_entry.get().strip()
-        if not os_name:
-            messagebox.showwarning("Attention", "Veuillez saisir un nom d'OS")
-            return
-        
-        self.audit_result.delete(1.0, tk.END)
-        self.audit_result.insert(tk.END, f"📅 Vérification EOL pour {os_name}...\n\n")
-        self.update_status("Vérification EOL en cours...")
-        
-        def task():
-            try:
-                result = self.audit.check_eol_dates(os_name)
-                self.root.after(0, lambda: self.display_audit_result(result))
-                self.root.after(0, lambda: self.update_status("Vérification EOL terminée"))
-            except Exception as e:
-                self.root.after(0, lambda: self.log_message(f"❌ Erreur: {e}", "error"))
-                self.root.after(0, lambda: self.update_status("Erreur lors de la vérification"))
-        
-        threading.Thread(target=task, daemon=True).start()
-    
-    def browse_csv_file(self):
-        """Ouvre un dialogue pour sélectionner un fichier CSV"""
+    def analyze_csv_dialog(self):
+        """Dialogue pour analyser un fichier CSV"""
         filename = filedialog.askopenfilename(
             title="Sélectionner un fichier CSV",
             filetypes=[("Fichiers CSV", "*.csv"), ("Tous les fichiers", "*.*")]
         )
+        
         if filename:
-            self.csv_path_entry.delete(0, tk.END)
-            self.csv_path_entry.insert(0, filename)
+            self.log_to_console(f"Analyse du fichier {filename}...", "INFO")
+            self.update_status("Analyse CSV en cours...")
+            self.run_in_thread(self.audit.analyze_csv_inventory, filename)
+            self.log_to_console("Analyse CSV terminée", "SUCCESS")
+            self.update_status("Prêt")
     
-    def run_csv_analysis(self):
-        """Lance l'analyse CSV"""
-        csv_file = self.csv_path_entry.get().strip()
-        if not csv_file:
-            messagebox.showwarning("Attention", "Veuillez sélectionner un fichier CSV")
-            return
+    def generate_report_dialog(self):
+        """Dialogue pour générer un rapport complet"""
+        dialog = tk.Toplevel(self.root)
+        dialog.title("Rapport complet d'obsolescence")
+        dialog.geometry("400x150")
+        dialog.transient(self.root)
+        dialog.grab_set()
         
-        self.audit_result.delete(1.0, tk.END)
-        self.audit_result.insert(tk.END, f"📊 Analyse du fichier {csv_file}...\n\n")
-        self.update_status("Analyse CSV en cours...")
+        tk.Label(dialog, text="Plage réseau à auditer:", font=('Arial', 10)).pack(pady=10)
+        network_entry = tk.Entry(dialog, width=30, font=('Arial', 10))
+        network_entry.pack(pady=5)
+        network_entry.insert(0, "192.168.10.0/24")
         
-        def task():
-            try:
-                result = self.audit.analyze_csv_inventory(csv_file)
-                self.root.after(0, lambda: self.display_audit_result(result))
-                self.root.after(0, lambda: self.update_status("Analyse CSV terminée"))
-            except Exception as e:
-                self.root.after(0, lambda: self.log_message(f"❌ Erreur: {e}", "error"))
-                self.root.after(0, lambda: self.update_status("Erreur lors de l'analyse"))
+        def execute():
+            network = network_entry.get().strip()
+            if network:
+                dialog.destroy()
+                self.log_to_console(f"Génération du rapport pour {network}...", "INFO")
+                self.update_status("Génération du rapport en cours...")
+                self.run_in_thread(self.audit.generate_full_report, network)
+                self.log_to_console("Rapport généré avec succès", "SUCCESS")
+                self.update_status("Prêt")
+            else:
+                messagebox.showwarning("Erreur", "Veuillez saisir une plage réseau")
         
-        threading.Thread(target=task, daemon=True).start()
+        tk.Button(dialog, text="Générer", command=execute, bg='#e67e22', fg='white', font=('Arial', 10)).pack(pady=10)
     
-    def run_full_report(self):
-        """Lance la génération du rapport complet"""
-        network = self.network_entry.get().strip()
-        if not network:
-            messagebox.showwarning("Attention", "Veuillez saisir une plage réseau")
-            return
-        
-        self.audit_result.delete(1.0, tk.END)
-        self.audit_result.insert(tk.END, f"📋 Génération du rapport complet...\n\n")
-        self.update_status("Génération du rapport en cours...")
-        
-        def task():
-            try:
-                result = self.audit.generate_full_report(network)
-                self.root.after(0, lambda: self.display_audit_result(result))
-                self.root.after(0, lambda: self.update_status("Rapport généré"))
-            except Exception as e:
-                self.root.after(0, lambda: self.log_message(f"❌ Erreur: {e}", "error"))
-                self.root.after(0, lambda: self.update_status("Erreur lors de la génération"))
-        
-        threading.Thread(target=task, daemon=True).start()
-    
-    # Méthodes d'affichage des résultats
-    
-    def display_diagnostic_result(self, result):
-        """Affiche les résultats de diagnostic"""
-        import json
-        self.diagnostic_result.insert(tk.END, json.dumps(result, indent=2, ensure_ascii=False))
-        self.log_message(f"✅ Diagnostic terminé - Statut: {result.get('global_status', 'N/A')}", "success")
-    
-    def display_full_diagnostic_results(self, results):
-        """Affiche les résultats du diagnostic complet"""
-        import json
-        for result in results:
-            self.diagnostic_result.insert(tk.END, f"\n{'='*60}\n")
-            self.diagnostic_result.insert(tk.END, json.dumps(result, indent=2, ensure_ascii=False))
-        self.log_message(f"✅ Diagnostic complet terminé - {len(results)} serveurs vérifiés", "success")
-    
-    def display_backup_result(self, result):
-        """Affiche les résultats de sauvegarde"""
-        import json
-        self.backup_result.insert(tk.END, json.dumps(result, indent=2, ensure_ascii=False))
-        self.log_message(f"✅ Sauvegarde terminée", "success")
-    
-    def display_audit_result(self, result):
-        """Affiche les résultats d'audit"""
-        import json
-        self.audit_result.insert(tk.END, json.dumps(result, indent=2, ensure_ascii=False))
-        self.log_message(f"✅ Audit terminé", "success")
-    
-    # Méthodes utilitaires
-    
-    def log_message(self, message, level="info"):
-        """Ajoute un message dans les logs"""
-        timestamp = datetime.now().strftime("%H:%M:%S")
-        log_entry = f"[{timestamp}] {message}\n"
-        self.log_display.insert(tk.END, log_entry, level)
-        self.log_display.see(tk.END)
-    
-    def update_status(self, message):
-        """Met à jour la barre de statut"""
-        self.status_bar.config(text=message)
-    
-    def refresh_logs(self):
-        """Rafraîchit l'affichage des logs"""
-        logs = self.logger.get_recent_logs(50)
-        self.log_display.delete(1.0, tk.END)
-        for log in logs:
-            self.log_display.insert(tk.END, log + "\n")
-        self.log_display.see(tk.END)
-    
-    def clear_log_display(self):
-        """Efface l'affichage des logs"""
-        self.log_display.delete(1.0, tk.END)
+    def quit_app(self):
+        """Quitte l'application"""
+        if messagebox.askyesno("Confirmation", "Voulez-vous vraiment quitter ?"):
+            self.logger.info("Fermeture de l'interface graphique")
+            self.root.quit()
 
 
 def main():
-    """Point d'entrée de l'application GUI"""
+    """Point d'entrée principal"""
     root = tk.Tk()
     app = NTLSysToolboxGUI(root)
     root.mainloop()

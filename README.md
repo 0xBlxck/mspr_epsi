@@ -58,13 +58,26 @@ export SSH_PASSWORD="votre_mot_de_passe_ssh"
 
 ## Utilisation
 
-### Lancement de l'application
+### Interface en ligne de commande (CLI)
 
 \`\`\`bash
 python main.py
 \`\`\`
 
-### Menu principal
+### Interface graphique (GUI)
+
+\`\`\`bash
+python gui.py
+\`\`\`
+
+L'interface graphique offre une expérience utilisateur moderne avec :
+- Navigation intuitive par modules
+- Console de résultats en temps réel avec codes couleur
+- Dialogues de saisie pour chaque fonction
+- Barre de statut pour suivre les opérations en cours
+- Exécution asynchrone pour ne pas bloquer l'interface
+
+### Menu principal (CLI)
 
 L'application présente un menu interactif avec les options suivantes :
 
@@ -79,25 +92,47 @@ L'application présente un menu interactif avec les options suivantes :
 ### Exemples d'utilisation
 
 #### Diagnostic d'un serveur MySQL
+
+**Via CLI :**
 1. Sélectionner "1. Module Diagnostic"
 2. Choisir "2. Tester la base de données MySQL"
 3. Saisir les informations de connexion
 
+**Via GUI :**
+1. Lancer `python gui.py`
+2. Cliquer sur "Tester MySQL" dans le Module Diagnostic
+3. Remplir le formulaire et cliquer sur "Tester"
+
 #### Sauvegarde de la base WMS
+
+**Via CLI :**
 1. Sélectionner "2. Module Sauvegarde WMS"
 2. Choisir "1. Sauvegarde complète de la base (SQL)"
 3. Fournir les credentials MySQL
 
+**Via GUI :**
+1. Cliquer sur "Sauvegarde complète (SQL)" dans le Module Sauvegarde WMS
+2. Remplir les paramètres de connexion
+3. Cliquer sur "Sauvegarder"
+
 #### Audit d'obsolescence
+
+**Via CLI :**
 1. Sélectionner "3. Module Audit d'obsolescence"
 2. Choisir "4. Générer un rapport complet d'obsolescence"
 3. Saisir la plage réseau (ex: 192.168.10.0/24)
+
+**Via GUI :**
+1. Cliquer sur "Rapport complet" dans le Module Audit d'obsolescence
+2. Saisir la plage réseau
+3. Cliquer sur "Générer"
 
 ## Structure du projet
 
 \`\`\`
 ntl-systoolbox/
-├── main.py                    # Point d'entrée principal
+├── main.py                    # Point d'entrée CLI
+├── gui.py                     # Interface graphique
 ├── modules/
 │   ├── diagnostic.py          # Module de diagnostic
 │   ├── backup.py              # Module de sauvegarde
