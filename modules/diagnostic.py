@@ -278,6 +278,37 @@ class DiagnosticModule:
         self.logger.info(f"Diagnostic Linux terminé - Statut: {results['global_status']}")
         return results
     
+    def test_ping(self, host):
+        """Teste la connectivité réseau avec un hôte via ping"""
+        print(f"\n🔍 Test de connectivité vers {host}...")
+        self.logger.info(f"Test ping vers {host}")
+        
+        results = {
+            "timestamp": datetime.now().isoformat(),
+            "host": host,
+            "type": "Ping_Test",
+            "test_result": {}
+        }
+        
+        # Test de ping
+        connectivity = self._test_connectivity(host, timeout=5)
+        results["test_result"] = connectivity
+        results["global_status"] = connectivity["status"]
+        
+        # Affichage du résultat
+        if connectivity["status"] == "OK":
+            print(f"  ✅ Hôte {host} est accessible (ping réussi)")
+        else:
+            print(f"  ❌ Hôte {host} est inaccessible (ping échoué)")
+            print(f"     Raison : {connectivity['message']}")
+        
+        # Sauvegarde JSON
+        filename = self.output_manager.save_json(results, f"ping_test_{host.replace('.', '_')}")
+        print(f"\n💾 Résultats sauvegardés : {filename}")
+        
+        self.logger.info(f"Test ping terminé - Statut: {results['global_status']}")
+        return results
+    
     def run_full_diagnostic(self):
         """Lance un diagnostic complet sur tous les serveurs critiques"""
         print("\n" + "="*60)
@@ -304,6 +335,12 @@ class DiagnosticModule:
             else:
                 result = self.check_linux_server(ip, "admin")
             
+            all_results.append(result)
+        
+        # Ajout d'un test ping simple pour chaque serveur
+        for name, ip in servers.items():
+            print(f"\n--- Ping Test for {name} ({ip}) ---")
+            result = self.test_ping(ip)
             all_results.append(result)
         
         # Rapport global

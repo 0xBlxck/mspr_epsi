@@ -64,7 +64,8 @@ class NTLSysToolbox:
             print("2. Tester la base de données MySQL")
             print("3. État d'un serveur Windows")
             print("4. État d'un serveur Linux")
-            print("5. Diagnostic complet")
+            print("5. Tester la connexion (ping)")
+            print("6. Diagnostic complet")
             print("0. Retour au menu principal")
             print("-"*60)
             
@@ -89,6 +90,9 @@ class NTLSysToolbox:
                 password = input("Mot de passe SSH (laisser vide pour clé) : ").strip() or None
                 self.diagnostic.check_linux_server(server, user, password)
             elif choice == "5":
+                host = input("Adresse IP ou nom d'hôte à tester : ").strip()
+                self.diagnostic.test_ping(host)
+            elif choice == "6":
                 self.diagnostic.run_full_diagnostic()
             elif choice == "0":
                 break
