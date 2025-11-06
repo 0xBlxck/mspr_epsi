@@ -458,9 +458,22 @@ class NTLSysToolboxGUI:
                 dialog.destroy()
                 self.log_to_console(f"Test ping vers {host}...", "INFO")
                 self.update_status("Test ping en cours...")
-                self.run_in_thread(self.diagnostic.test_ping, host)
-                self.log_to_console("Test ping terminé", "SUCCESS")
-                self.update_status("Prêt")
+                
+                def run_ping():
+                    result = self.diagnostic.test_ping(host)
+                    
+                    # Afficher les résultats dans la console GUI
+                    if result["global_status"] == "OK":
+                        self.log_to_console(f"✅ Hôte {host} est accessible", "SUCCESS")
+                        self.log_to_console(f"   Message: {result['test_result']['message']}", "INFO")
+                    else:
+                        self.log_to_console(f"❌ Hôte {host} est inaccessible", "ERROR")
+                        self.log_to_console(f"   Raison: {result['test_result']['message']}", "WARNING")
+                    
+                    self.log_to_console(f"📁 Résultats sauvegardés dans output/", "INFO")
+                    self.update_status("Prêt")
+                
+                self.run_in_thread(run_ping)
             else:
                 messagebox.showwarning("Erreur", "Veuillez saisir une adresse IP ou un nom d'hôte")
         
