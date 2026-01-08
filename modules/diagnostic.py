@@ -350,7 +350,8 @@ class DiagnosticModule:
         if platform.system().lower() == "windows":
             command = ["ping", param, "1", "-w", str(timeout * 1000), host]
         else:
-            command = ["ping", param, "1", "-W", str(timeout * 1000), host]
+            # Sur Linux, utiliser -w (en secondes) à la place de -W (non portable)
+            command = ["ping", param, "1", "-w", str(timeout), host]
         
         try:
             result = subprocess.run(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=timeout+1)
