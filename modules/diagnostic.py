@@ -266,54 +266,6 @@ class DiagnosticModule:
         self.logger.info(f"Diagnostic Linux terminé - SSH non configuré")
         return results
     
-    def check_linux_server(self, server_ip, user, password=None):
-        """Vérifie l'état d'un serveur Linux"""
-        print(f"\n🔍 Diagnostic serveur Linux {server_ip}...")
-        self.logger.info(f"Début diagnostic Linux sur {server_ip}")
-        
-        results = {
-            "timestamp": datetime.now().isoformat(),
-            "server": server_ip,
-            "type": "Linux_Server_Check",
-            "system_info": {},
-            "resources": {}
-        }
-        
-        # Test de connectivité
-        connectivity = self._test_connectivity(server_ip)
-        
-        if connectivity["status"] != "OK":
-            results["global_status"] = "ERROR"
-            results["error"] = "Serveur inaccessible"
-            print(f"  ❌ Serveur {server_ip} inaccessible")
-            filename = self.output_manager.save_json(results, f"diagnostic_linux_{server_ip}")
-            print(f"\n💾 Résultats sauvegardés : {filename}")
-            self.logger.info(f"Diagnostic Linux terminé - Statut: ERROR - Serveur inaccessible")
-            return results
-        
-        print("  ✅ Serveur accessible")
-        
-        try:
-            import paramiko
-        except ImportError:
-            results["global_status"] = "ERROR"
-            results["error"] = "Paramiko non installé - SSH non disponible"
-            print(f"\n  ❌ SSH non disponible (pip install paramiko)")
-            filename = self.output_manager.save_json(results, f"diagnostic_linux_{server_ip}")
-            print(f"\n💾 Résultats sauvegardés : {filename}")
-            self.logger.error("Paramiko non installé")
-            return results
-        
-        # Si tu as SSH, mettre le code réel ici (connexion SSH via paramiko)
-        # Pour l'instant, on refuse l'accès si SSH n'est pas configuré
-        results["global_status"] = "ERROR"
-        results["error"] = "Connexion SSH non configurée - À implémenter avec paramiko"
-        print(f"\n  ❌ SSH non configuré (implémentation à faire)")
-        filename = self.output_manager.save_json(results, f"diagnostic_linux_{server_ip}")
-        print(f"\n💾 Résultats sauvegardés : {filename}")
-        self.logger.info(f"Diagnostic Linux terminé - SSH non configuré")
-        return results
-    
     def test_ping(self, host):
         """Teste la connectivité réseau avec un hôte via ping"""
         print(f"\n🔍 Test de connectivité vers {host}...")
@@ -394,7 +346,11 @@ class DiagnosticModule:
     def _test_connectivity(self, host, timeout=3):
         """Test de connectivité ping"""
         param = "-n" if platform.system().lower() == "windows" else "-c"
-        command = ["ping", param, "1", "-w" if platform.system().lower() == "windows" else "-W", str(timeout * 1000 if platform.system().lower() == "windows" else timeout), host]
+        
+        if platform.system().lower() == "windows":
+            command = ["ping", param, "1", "-w", str(timeout * 1000), host]
+        else:
+            command = ["ping", param, "1", "-W", str(timeout * 1000), host]
         
         try:
             result = subprocess.run(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=timeout+1)
@@ -402,8 +358,10 @@ class DiagnosticModule:
                 return {"status": "OK", "message": "Hôte accessible"}
             else:
                 return {"status": "ERROR", "message": "Hôte inaccessible"}
-        except:
-            return {"status": "ERROR", "message": "Timeout"}
+        except subprocess.TimeoutExpired:
+            return {"status": "ERROR", "message": "Timeout - Hôte inaccessible"}
+        except Exception as e:
+            return {"status": "ERROR", "message": f"Erreur ping: {str(e)}"}
     
     def _test_port(self, host, port, service_name):
         """Test d'ouverture de port"""
