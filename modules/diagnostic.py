@@ -174,39 +174,42 @@ class DiagnosticModule:
             results["global_status"] = "ERROR"
             results["error"] = "Serveur inaccessible"
             print(f"  ❌ Serveur {server_ip} inaccessible")
-        else:
-            print("  ✅ Serveur accessible")
-            
-            # Simulation des informations (en production, utiliser WMI/PowerShell distant)
-            print("\n  ⚠️  Mode simulation activé (accès distant WMI non implémenté)")
-            print("     En production, utiliser PowerShell Remoting ou WMI")
-            
-            results["system_info"] = {
-                "os": "Windows Server 2019",
-                "version": "10.0.17763",
-                "hostname": f"SRV-{server_ip.split('.')[-1]}",
-                "uptime_days": 45
-            }
-            
-            results["resources"] = {
-                "cpu_usage_percent": 35,
-                "ram_total_gb": 128,
-                "ram_used_gb": 58,
-                "ram_usage_percent": 45,
-                "disks": [
-                    {"drive": "C:", "total_gb": 500, "used_gb": 380, "usage_percent": 76},
-                    {"drive": "D:", "total_gb": 1000, "used_gb": 450, "usage_percent": 45}
-                ]
-            }
-            
-            results["global_status"] = "OK"
-            
-            print(f"\n  📊 Système : {results['system_info']['os']}")
-            print(f"  📊 Uptime : {results['system_info']['uptime_days']} jours")
-            print(f"  📊 CPU : {results['resources']['cpu_usage_percent']}%")
-            print(f"  📊 RAM : {results['resources']['ram_usage_percent']}% ({results['resources']['ram_used_gb']}/{results['resources']['ram_total_gb']} GB)")
-            for disk in results['resources']['disks']:
-                print(f"  📊 Disque {disk['drive']} : {disk['usage_percent']}% ({disk['used_gb']}/{disk['total_gb']} GB)")
+            filename = self.output_manager.save_json(results, f"diagnostic_windows_{server_ip}")
+            print(f"\n💾 Résultats sauvegardés : {filename}")
+            self.logger.info(f"Diagnostic Windows terminé - Statut: ERROR - Serveur inaccessible")
+            return results
+        
+        print("  ✅ Serveur accessible")
+        
+        print("\n  ⚠️  Mode simulation activé (accès distant WMI non implémenté)")
+        print("     En production, utiliser PowerShell Remoting ou WMI")
+        
+        results["system_info"] = {
+            "os": "Windows Server 2019",
+            "version": "10.0.17763",
+            "hostname": f"SRV-{server_ip.split('.')[-1]}",
+            "uptime_days": 45
+        }
+        
+        results["resources"] = {
+            "cpu_usage_percent": 35,
+            "ram_total_gb": 128,
+            "ram_used_gb": 58,
+            "ram_usage_percent": 45,
+            "disks": [
+                {"drive": "C:", "total_gb": 500, "used_gb": 380, "usage_percent": 76},
+                {"drive": "D:", "total_gb": 1000, "used_gb": 450, "usage_percent": 45}
+            ]
+        }
+        
+        results["global_status"] = "OK"
+        
+        print(f"\n  📊 Système : {results['system_info']['os']}")
+        print(f"  📊 Uptime : {results['system_info']['uptime_days']} jours")
+        print(f"  📊 CPU : {results['resources']['cpu_usage_percent']}%")
+        print(f"  📊 RAM : {results['resources']['ram_usage_percent']}% ({results['resources']['ram_used_gb']}/{results['resources']['ram_total_gb']} GB)")
+        for disk in results['resources']['disks']:
+            print(f"  📊 Disque {disk['drive']} : {disk['usage_percent']}% ({disk['used_gb']}/{disk['total_gb']} GB)")
         
         # Sauvegarde JSON
         filename = self.output_manager.save_json(results, f"diagnostic_windows_{server_ip}")
@@ -235,41 +238,44 @@ class DiagnosticModule:
             results["global_status"] = "ERROR"
             results["error"] = "Serveur inaccessible"
             print(f"  ❌ Serveur {server_ip} inaccessible")
-        else:
-            print("  ✅ Serveur accessible")
-            
-            # Simulation des informations (en production, utiliser SSH)
-            print("\n  ⚠️  Mode simulation activé (connexion SSH non implémentée)")
-            print("     En production, utiliser paramiko ou fabric pour SSH")
-            
-            results["system_info"] = {
-                "os": "Ubuntu 20.04 LTS",
-                "kernel": "5.4.0-150-generic",
-                "hostname": f"srv-{server_ip.split('.')[-1]}",
-                "uptime_days": 120
+            filename = self.output_manager.save_json(results, f"diagnostic_linux_{server_ip}")
+            print(f"\n💾 Résultats sauvegardés : {filename}")
+            self.logger.info(f"Diagnostic Linux terminé - Statut: ERROR - Serveur inaccessible")
+            return results
+        
+        print("  ✅ Serveur accessible")
+        
+        print("\n  ⚠️  Mode simulation activé (connexion SSH non implémentée)")
+        print("     En production, utiliser paramiko ou fabric pour SSH")
+        
+        results["system_info"] = {
+            "os": "Ubuntu 20.04 LTS",
+            "kernel": "5.4.0-150-generic",
+            "hostname": f"srv-{server_ip.split('.')[-1]}",
+            "uptime_days": 120
+        }
+        
+        results["resources"] = {
+            "cpu_usage_percent": 12,
+            "ram_total_gb": 64,
+            "ram_used_gb": 28,
+            "ram_usage_percent": 44,
+            "disk_root": {
+                "mount": "/",
+                "total_gb": 200,
+                "used_gb": 85,
+                "usage_percent": 43
             }
-            
-            results["resources"] = {
-                "cpu_usage_percent": 12,
-                "ram_total_gb": 64,
-                "ram_used_gb": 28,
-                "ram_usage_percent": 44,
-                "disk_root": {
-                    "mount": "/",
-                    "total_gb": 200,
-                    "used_gb": 85,
-                    "usage_percent": 43
-                }
-            }
-            
-            results["global_status"] = "OK"
-            
-            print(f"\n  📊 Système : {results['system_info']['os']}")
-            print(f"  📊 Kernel : {results['system_info']['kernel']}")
-            print(f"  📊 Uptime : {results['system_info']['uptime_days']} jours")
-            print(f"  📊 CPU : {results['resources']['cpu_usage_percent']}%")
-            print(f"  📊 RAM : {results['resources']['ram_usage_percent']}% ({results['resources']['ram_used_gb']}/{results['resources']['ram_total_gb']} GB)")
-            print(f"  📊 Disque / : {results['resources']['disk_root']['usage_percent']}% ({results['resources']['disk_root']['used_gb']}/{results['resources']['disk_root']['total_gb']} GB)")
+        }
+        
+        results["global_status"] = "OK"
+        
+        print(f"\n  📊 Système : {results['system_info']['os']}")
+        print(f"  📊 Kernel : {results['system_info']['kernel']}")
+        print(f"  📊 Uptime : {results['system_info']['uptime_days']} jours")
+        print(f"  📊 CPU : {results['resources']['cpu_usage_percent']}%")
+        print(f"  📊 RAM : {results['resources']['ram_usage_percent']}% ({results['resources']['ram_used_gb']}/{results['resources']['ram_total_gb']} GB)")
+        print(f"  📊 Disque / : {results['resources']['disk_root']['usage_percent']}% ({results['resources']['disk_root']['used_gb']}/{results['resources']['disk_root']['total_gb']} GB)")
         
         # Sauvegarde JSON
         filename = self.output_manager.save_json(results, f"diagnostic_linux_{server_ip}")
