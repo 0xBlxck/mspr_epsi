@@ -245,43 +245,73 @@ class DiagnosticModule:
         
         print("  ✅ Serveur accessible")
         
-        print("\n  ⚠️  Mode simulation activé (connexion SSH non implémentée)")
-        print("     En production, utiliser paramiko ou fabric pour SSH")
+        try:
+            import paramiko
+        except ImportError:
+            results["global_status"] = "ERROR"
+            results["error"] = "Paramiko non installé - SSH non disponible"
+            print(f"\n  ❌ SSH non disponible (pip install paramiko)")
+            filename = self.output_manager.save_json(results, f"diagnostic_linux_{server_ip}")
+            print(f"\n💾 Résultats sauvegardés : {filename}")
+            self.logger.error("Paramiko non installé")
+            return results
         
-        results["system_info"] = {
-            "os": "Ubuntu 20.04 LTS",
-            "kernel": "5.4.0-150-generic",
-            "hostname": f"srv-{server_ip.split('.')[-1]}",
-            "uptime_days": 120
-        }
-        
-        results["resources"] = {
-            "cpu_usage_percent": 12,
-            "ram_total_gb": 64,
-            "ram_used_gb": 28,
-            "ram_usage_percent": 44,
-            "disk_root": {
-                "mount": "/",
-                "total_gb": 200,
-                "used_gb": 85,
-                "usage_percent": 43
-            }
-        }
-        
-        results["global_status"] = "OK"
-        
-        print(f"\n  📊 Système : {results['system_info']['os']}")
-        print(f"  📊 Kernel : {results['system_info']['kernel']}")
-        print(f"  📊 Uptime : {results['system_info']['uptime_days']} jours")
-        print(f"  📊 CPU : {results['resources']['cpu_usage_percent']}%")
-        print(f"  📊 RAM : {results['resources']['ram_usage_percent']}% ({results['resources']['ram_used_gb']}/{results['resources']['ram_total_gb']} GB)")
-        print(f"  📊 Disque / : {results['resources']['disk_root']['usage_percent']}% ({results['resources']['disk_root']['used_gb']}/{results['resources']['disk_root']['total_gb']} GB)")
-        
-        # Sauvegarde JSON
+        # Si tu as SSH, mettre le code réel ici (connexion SSH via paramiko)
+        # Pour l'instant, on refuse l'accès si SSH n'est pas configuré
+        results["global_status"] = "ERROR"
+        results["error"] = "Connexion SSH non configurée - À implémenter avec paramiko"
+        print(f"\n  ❌ SSH non configuré (implémentation à faire)")
         filename = self.output_manager.save_json(results, f"diagnostic_linux_{server_ip}")
         print(f"\n💾 Résultats sauvegardés : {filename}")
+        self.logger.info(f"Diagnostic Linux terminé - SSH non configuré")
+        return results
+    
+    def check_linux_server(self, server_ip, user, password=None):
+        """Vérifie l'état d'un serveur Linux"""
+        print(f"\n🔍 Diagnostic serveur Linux {server_ip}...")
+        self.logger.info(f"Début diagnostic Linux sur {server_ip}")
         
-        self.logger.info(f"Diagnostic Linux terminé - Statut: {results['global_status']}")
+        results = {
+            "timestamp": datetime.now().isoformat(),
+            "server": server_ip,
+            "type": "Linux_Server_Check",
+            "system_info": {},
+            "resources": {}
+        }
+        
+        # Test de connectivité
+        connectivity = self._test_connectivity(server_ip)
+        
+        if connectivity["status"] != "OK":
+            results["global_status"] = "ERROR"
+            results["error"] = "Serveur inaccessible"
+            print(f"  ❌ Serveur {server_ip} inaccessible")
+            filename = self.output_manager.save_json(results, f"diagnostic_linux_{server_ip}")
+            print(f"\n💾 Résultats sauvegardés : {filename}")
+            self.logger.info(f"Diagnostic Linux terminé - Statut: ERROR - Serveur inaccessible")
+            return results
+        
+        print("  ✅ Serveur accessible")
+        
+        try:
+            import paramiko
+        except ImportError:
+            results["global_status"] = "ERROR"
+            results["error"] = "Paramiko non installé - SSH non disponible"
+            print(f"\n  ❌ SSH non disponible (pip install paramiko)")
+            filename = self.output_manager.save_json(results, f"diagnostic_linux_{server_ip}")
+            print(f"\n💾 Résultats sauvegardés : {filename}")
+            self.logger.error("Paramiko non installé")
+            return results
+        
+        # Si tu as SSH, mettre le code réel ici (connexion SSH via paramiko)
+        # Pour l'instant, on refuse l'accès si SSH n'est pas configuré
+        results["global_status"] = "ERROR"
+        results["error"] = "Connexion SSH non configurée - À implémenter avec paramiko"
+        print(f"\n  ❌ SSH non configuré (implémentation à faire)")
+        filename = self.output_manager.save_json(results, f"diagnostic_linux_{server_ip}")
+        print(f"\n💾 Résultats sauvegardés : {filename}")
+        self.logger.info(f"Diagnostic Linux terminé - SSH non configuré")
         return results
     
     def test_ping(self, host):
