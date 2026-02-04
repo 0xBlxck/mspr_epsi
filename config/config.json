@@ -41,8 +41,20 @@
       "host": "192.168.10.21",
       "port": 3306,
       "database": "wms_db",
-      "user": "wms_user"
+      "user": "wms_user",
+      "_comment": "Le mot de passe doit être fourni via la variable MYSQL_PASSWORD"
     }
+  },
+  "ssh": {
+    "default_user": "admin",
+    "default_port": 22,
+    "_comment": "Le mot de passe SSH doit être fourni via la variable SSH_PASSWORD ou utiliser une clé SSH"
+  },
+  "winrm": {
+    "default_user": "Administrator",
+    "default_port": 5985,
+    "transport": "ntlm",
+    "_comment": "Le mot de passe WinRM doit être fourni via la variable WINRM_PASSWORD"
   },
   "backup": {
     "retention_days": 30,

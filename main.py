@@ -83,12 +83,19 @@ class NTLSysToolbox:
                 self.diagnostic.check_mysql(host, int(port), database, user, password)
             elif choice == "3":
                 server = input("Adresse IP du serveur Windows : ").strip()
-                self.diagnostic.check_windows_server(server)
+                user = input("Utilisateur WinRM (ex: Administrator) : ").strip()
+                password = input("Mot de passe WinRM : ").strip()
+                self.diagnostic.check_windows_server(server, user, password)
             elif choice == "4":
                 server = input("Adresse IP du serveur Linux : ").strip()
                 user = input("Utilisateur SSH : ").strip()
-                password = input("Mot de passe SSH (laisser vide pour clé) : ").strip() or None
-                self.diagnostic.check_linux_server(server, user, password)
+                auth_method = input("Méthode d'auth [1=mot de passe, 2=clé SSH] : ").strip()
+                if auth_method == "2":
+                    ssh_key = input("Chemin de la clé SSH : ").strip()
+                    self.diagnostic.check_linux_server(server, user, ssh_key_path=ssh_key)
+                else:
+                    password = input("Mot de passe SSH : ").strip()
+                    self.diagnostic.check_linux_server(server, user, password=password)
             elif choice == "5":
                 host = input("Adresse IP ou nom d'hôte à tester : ").strip()
                 self.diagnostic.test_ping(host)

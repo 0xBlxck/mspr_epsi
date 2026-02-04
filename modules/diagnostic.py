@@ -154,8 +154,8 @@ class DiagnosticModule:
         self.logger.info(f"Vérification MySQL terminée - Statut: {results['global_status']}")
         return results
     
-    def check_windows_server(self, server_ip):
-        """Vérifie l'état d'un serveur Windows"""
+    def check_windows_server(self, server_ip, user=None, password=None):
+        """Vérifie l'état d'un serveur Windows via WinRM"""
         print(f"\n🔍 Diagnostic serveur Windows {server_ip}...")
         self.logger.info(f"Début diagnostic Windows sur {server_ip}")
         
@@ -181,45 +181,137 @@ class DiagnosticModule:
         
         print("  ✅ Serveur accessible")
         
-        print("\n  ⚠️  Mode simulation activé (accès distant WMI non implémenté)")
-        print("     En production, utiliser PowerShell Remoting ou WMI")
+        try:
+            import winrm
+        except ImportError:
+            results["global_status"] = "ERROR"
+            results["error"] = "pywinrm non installé - pip install pywinrm"
+            print(f"\n  ❌ WinRM non disponible (pip install pywinrm)")
+            filename = self.output_manager.save_json(results, f"diagnostic_windows_{server_ip}")
+            print(f"\n💾 Résultats sauvegardés : {filename}")
+            self.logger.error("pywinrm non installé")
+            return results
         
-        results["system_info"] = {
-            "os": "Windows Server 2019",
-            "version": "10.0.17763",
-            "hostname": f"SRV-{server_ip.split('.')[-1]}",
-            "uptime_days": 45
-        }
+        if not user or not password:
+            results["global_status"] = "ERROR"
+            results["error"] = "Identifiants WinRM requis (user et password)"
+            print(f"  ❌ Identifiants WinRM manquants")
+            filename = self.output_manager.save_json(results, f"diagnostic_windows_{server_ip}")
+            print(f"\n💾 Résultats sauvegardés : {filename}")
+            return results
         
-        results["resources"] = {
-            "cpu_usage_percent": 35,
-            "ram_total_gb": 128,
-            "ram_used_gb": 58,
-            "ram_usage_percent": 45,
-            "disks": [
-                {"drive": "C:", "total_gb": 500, "used_gb": 380, "usage_percent": 76},
-                {"drive": "D:", "total_gb": 1000, "used_gb": 450, "usage_percent": 45}
-            ]
-        }
-        
-        results["global_status"] = "OK"
-        
-        print(f"\n  📊 Système : {results['system_info']['os']}")
-        print(f"  📊 Uptime : {results['system_info']['uptime_days']} jours")
-        print(f"  📊 CPU : {results['resources']['cpu_usage_percent']}%")
-        print(f"  📊 RAM : {results['resources']['ram_usage_percent']}% ({results['resources']['ram_used_gb']}/{results['resources']['ram_total_gb']} GB)")
-        for disk in results['resources']['disks']:
-            print(f"  📊 Disque {disk['drive']} : {disk['usage_percent']}% ({disk['used_gb']}/{disk['total_gb']} GB)")
+        # Connexion WinRM réelle
+        try:
+            print("  → Connexion WinRM en cours...")
+            session = winrm.Session(
+                f"http://{server_ip}:5985/wsman",
+                auth=(user, password),
+                transport='ntlm'
+            )
+            
+            # Test de connexion
+            test_result = session.run_ps("$env:COMPUTERNAME")
+            if test_result.status_code != 0:
+                raise Exception(f"Erreur WinRM: {test_result.std_err.decode()}")
+            
+            hostname = test_result.std_out.decode().strip()
+            results["system_info"]["hostname"] = hostname
+            print(f"  ✅ Connexion WinRM établie")
+            print(f"  📊 Hostname : {hostname}")
+            
+            # OS et version
+            os_cmd = "Get-CimInstance Win32_OperatingSystem | Select-Object Caption, Version, LastBootUpTime | ConvertTo-Json"
+            os_result = session.run_ps(os_cmd)
+            if os_result.status_code == 0:
+                import json as json_lib
+                os_data = json_lib.loads(os_result.std_out.decode())
+                results["system_info"]["os"] = os_data.get("Caption", "Windows Server")
+                results["system_info"]["version"] = os_data.get("Version", "Unknown")
+                print(f"  📊 Système : {os_data.get('Caption', 'Windows Server')}")
+                
+                # Calcul uptime
+                if "LastBootUpTime" in os_data:
+                    boot_time_str = os_data["LastBootUpTime"]
+                    # Format: /Date(timestamp)/
+                    if "/Date(" in boot_time_str:
+                        timestamp_ms = int(boot_time_str.replace("/Date(", "").replace(")/", "").split("+")[0].split("-")[0])
+                        boot_time = datetime.fromtimestamp(timestamp_ms / 1000)
+                        uptime = datetime.now() - boot_time
+                        results["system_info"]["uptime_days"] = uptime.days
+                        print(f"  📊 Uptime : {uptime.days} jours")
+            
+            # CPU Usage
+            cpu_cmd = "Get-CimInstance Win32_Processor | Measure-Object -Property LoadPercentage -Average | Select-Object -ExpandProperty Average"
+            cpu_result = session.run_ps(cpu_cmd)
+            if cpu_result.status_code == 0:
+                cpu_usage = float(cpu_result.std_out.decode().strip() or 0)
+                results["resources"]["cpu_usage_percent"] = round(cpu_usage, 1)
+                print(f"  📊 CPU : {cpu_usage:.1f}%")
+            
+            # RAM
+            ram_cmd = """
+            $os = Get-CimInstance Win32_OperatingSystem
+            $totalRam = [math]::Round($os.TotalVisibleMemorySize / 1MB, 2)
+            $freeRam = [math]::Round($os.FreePhysicalMemory / 1MB, 2)
+            $usedRam = [math]::Round($totalRam - $freeRam, 2)
+            $percentUsed = [math]::Round(($usedRam / $totalRam) * 100, 1)
+            @{TotalGB=$totalRam; UsedGB=$usedRam; PercentUsed=$percentUsed} | ConvertTo-Json
+            """
+            ram_result = session.run_ps(ram_cmd)
+            if ram_result.status_code == 0:
+                import json as json_lib
+                ram_data = json_lib.loads(ram_result.std_out.decode())
+                results["resources"]["ram_total_gb"] = ram_data.get("TotalGB", 0)
+                results["resources"]["ram_used_gb"] = ram_data.get("UsedGB", 0)
+                results["resources"]["ram_usage_percent"] = ram_data.get("PercentUsed", 0)
+                print(f"  📊 RAM : {ram_data.get('PercentUsed', 0)}% ({ram_data.get('UsedGB', 0)}/{ram_data.get('TotalGB', 0)} GB)")
+            
+            # Disques
+            disk_cmd = """
+            Get-CimInstance Win32_LogicalDisk -Filter "DriveType=3" | 
+            Select-Object DeviceID, 
+                @{N='TotalGB';E={[math]::Round($_.Size/1GB,2)}}, 
+                @{N='UsedGB';E={[math]::Round(($_.Size - $_.FreeSpace)/1GB,2)}}, 
+                @{N='PercentUsed';E={[math]::Round((($_.Size - $_.FreeSpace)/$_.Size)*100,1)}} | 
+            ConvertTo-Json
+            """
+            disk_result = session.run_ps(disk_cmd)
+            if disk_result.status_code == 0:
+                import json as json_lib
+                disk_data = json_lib.loads(disk_result.std_out.decode())
+                # Si un seul disque, convertir en liste
+                if isinstance(disk_data, dict):
+                    disk_data = [disk_data]
+                
+                disks = []
+                for disk in disk_data:
+                    disks.append({
+                        "drive": disk.get("DeviceID", "?"),
+                        "total_gb": disk.get("TotalGB", 0),
+                        "used_gb": disk.get("UsedGB", 0),
+                        "usage_percent": disk.get("PercentUsed", 0)
+                    })
+                    print(f"  📊 Disque {disk.get('DeviceID', '?')} : {disk.get('PercentUsed', 0)}% ({disk.get('UsedGB', 0)}/{disk.get('TotalGB', 0)} GB)")
+                
+                results["resources"]["disks"] = disks
+            
+            results["global_status"] = "OK"
+            
+        except Exception as e:
+            results["global_status"] = "ERROR"
+            results["error"] = str(e)
+            print(f"  ❌ Erreur WinRM: {e}")
+            self.logger.error(f"Erreur diagnostic Windows: {e}")
         
         # Sauvegarde JSON
         filename = self.output_manager.save_json(results, f"diagnostic_windows_{server_ip}")
         print(f"\n💾 Résultats sauvegardés : {filename}")
         
-        self.logger.info(f"Diagnostic Windows terminé - Statut: {results['global_status']}")
+        self.logger.info(f"Diagnostic Windows terminé - Statut: {results.get('global_status', 'UNKNOWN')}")
         return results
     
-    def check_linux_server(self, server_ip, user, password=None):
-        """Vérifie l'état d'un serveur Linux"""
+    def check_linux_server(self, server_ip, user, password=None, ssh_key_path=None):
+        """Vérifie l'état d'un serveur Linux via SSH"""
         print(f"\n🔍 Diagnostic serveur Linux {server_ip}...")
         self.logger.info(f"Début diagnostic Linux sur {server_ip}")
         
@@ -249,21 +341,121 @@ class DiagnosticModule:
             import paramiko
         except ImportError:
             results["global_status"] = "ERROR"
-            results["error"] = "Paramiko non installé - SSH non disponible"
+            results["error"] = "Paramiko non installé - pip install paramiko"
             print(f"\n  ❌ SSH non disponible (pip install paramiko)")
             filename = self.output_manager.save_json(results, f"diagnostic_linux_{server_ip}")
             print(f"\n💾 Résultats sauvegardés : {filename}")
             self.logger.error("Paramiko non installé")
             return results
         
-        # Si tu as SSH, mettre le code réel ici (connexion SSH via paramiko)
-        # Pour l'instant, on refuse l'accès si SSH n'est pas configuré
-        results["global_status"] = "ERROR"
-        results["error"] = "Connexion SSH non configurée - À implémenter avec paramiko"
-        print(f"\n  ❌ SSH non configuré (implémentation à faire)")
+        # Connexion SSH réelle
+        try:
+            print("  → Connexion SSH en cours...")
+            ssh = paramiko.SSHClient()
+            ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+            
+            if ssh_key_path:
+                ssh.connect(server_ip, username=user, key_filename=ssh_key_path, timeout=10)
+            else:
+                ssh.connect(server_ip, username=user, password=password, timeout=10)
+            
+            print("  ✅ Connexion SSH établie")
+            
+            # Récupération des informations système
+            # OS et version
+            stdin, stdout, stderr = ssh.exec_command("cat /etc/os-release | grep -E '^(NAME|VERSION)=' | head -2")
+            os_info = stdout.read().decode().strip()
+            os_name = "Linux"
+            os_version = "Unknown"
+            for line in os_info.split('\n'):
+                if line.startswith('NAME='):
+                    os_name = line.split('=')[1].strip('"')
+                elif line.startswith('VERSION='):
+                    os_version = line.split('=')[1].strip('"')
+            
+            results["system_info"]["os"] = f"{os_name} {os_version}"
+            print(f"  📊 Système : {os_name} {os_version}")
+            
+            # Hostname
+            stdin, stdout, stderr = ssh.exec_command("hostname")
+            hostname = stdout.read().decode().strip()
+            results["system_info"]["hostname"] = hostname
+            print(f"  📊 Hostname : {hostname}")
+            
+            # Uptime
+            stdin, stdout, stderr = ssh.exec_command("uptime -p")
+            uptime = stdout.read().decode().strip()
+            results["system_info"]["uptime"] = uptime
+            print(f"  📊 Uptime : {uptime}")
+            
+            # CPU Usage
+            stdin, stdout, stderr = ssh.exec_command("top -bn1 | grep 'Cpu(s)' | awk '{print $2 + $4}'")
+            cpu_output = stdout.read().decode().strip()
+            try:
+                cpu_usage = float(cpu_output)
+            except:
+                cpu_usage = 0.0
+            results["resources"]["cpu_usage_percent"] = round(cpu_usage, 2)
+            print(f"  📊 CPU : {cpu_usage:.1f}%")
+            
+            # RAM
+            stdin, stdout, stderr = ssh.exec_command("free -m | grep Mem")
+            mem_output = stdout.read().decode().strip().split()
+            if len(mem_output) >= 3:
+                ram_total = int(mem_output[1]) / 1024  # Convertir en GB
+                ram_used = int(mem_output[2]) / 1024
+                ram_percent = (ram_used / ram_total) * 100 if ram_total > 0 else 0
+                results["resources"]["ram_total_gb"] = round(ram_total, 2)
+                results["resources"]["ram_used_gb"] = round(ram_used, 2)
+                results["resources"]["ram_usage_percent"] = round(ram_percent, 1)
+                print(f"  📊 RAM : {ram_percent:.1f}% ({ram_used:.1f}/{ram_total:.1f} GB)")
+            
+            # Disques
+            stdin, stdout, stderr = ssh.exec_command("df -h --output=target,size,used,pcent | tail -n +2 | grep -E '^/(|home|var|opt|data)'")
+            disk_output = stdout.read().decode().strip()
+            disks = []
+            for line in disk_output.split('\n'):
+                if line.strip():
+                    parts = line.split()
+                    if len(parts) >= 4:
+                        mount = parts[0]
+                        total = parts[1]
+                        used = parts[2]
+                        percent = parts[3].replace('%', '')
+                        disks.append({
+                            "mount": mount,
+                            "total": total,
+                            "used": used,
+                            "usage_percent": int(percent) if percent.isdigit() else 0
+                        })
+                        print(f"  📊 Disque {mount} : {percent}% ({used}/{total})")
+            
+            results["resources"]["disks"] = disks
+            
+            ssh.close()
+            results["global_status"] = "OK"
+            
+        except paramiko.AuthenticationException:
+            results["global_status"] = "ERROR"
+            results["error"] = "Échec d'authentification SSH"
+            print(f"  ❌ Échec d'authentification SSH")
+            self.logger.error(f"Échec d'authentification SSH sur {server_ip}")
+        except paramiko.SSHException as e:
+            results["global_status"] = "ERROR"
+            results["error"] = f"Erreur SSH: {str(e)}"
+            print(f"  ❌ Erreur SSH: {e}")
+            self.logger.error(f"Erreur SSH: {e}")
+        except Exception as e:
+            results["global_status"] = "ERROR"
+            results["error"] = str(e)
+            print(f"  ❌ Erreur: {e}")
+            self.logger.error(f"Erreur diagnostic Linux: {e}")
+        
+        # Sauvegarde JSON
         filename = self.output_manager.save_json(results, f"diagnostic_linux_{server_ip}")
         print(f"\n💾 Résultats sauvegardés : {filename}")
-        self.logger.info(f"Diagnostic Linux terminé - SSH non configuré")
+        
+        self.logger.info(f"Diagnostic Linux terminé - Statut: {results.get('global_status', 'UNKNOWN')}")
         return results
     
     def test_ping(self, host):

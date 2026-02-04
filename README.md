@@ -34,6 +34,16 @@ NTL-SysToolbox est un outil en ligne de commande développé pour industrialiser
 - Python 3.8 ou supérieur
 - Accès réseau aux serveurs à auditer
 - Droits d'administration pour certaines opérations
+- **Pour Linux** : SSH activé sur les serveurs cibles (port 22)
+- **Pour Windows** : WinRM activé sur les serveurs cibles (port 5985)
+
+### Activation WinRM sur Windows Server
+
+\`\`\`powershell
+# Sur le serveur Windows cible (en tant qu'administrateur)
+Enable-PSRemoting -Force
+winrm quickconfig
+\`\`\`
 
 ### Installation des dépendances
 
@@ -54,6 +64,7 @@ pip install -r requirements.txt
 \`\`\`bash
 export MYSQL_PASSWORD="votre_mot_de_passe"
 export SSH_PASSWORD="votre_mot_de_passe_ssh"
+export WINRM_PASSWORD="votre_mot_de_passe_winrm"
 \`\`\`
 
 ## Utilisation
@@ -203,16 +214,28 @@ Les logs sont automatiquement générés dans `output/logs/` avec un fichier par
 - Limiter les droits d'accès aux fichiers de configuration
 - Chiffrer les sauvegardes sensibles
 
+## Prérequis Réseau
+
+### Pour le diagnostic Windows (WinRM)
+- Port 5985 (HTTP) ou 5986 (HTTPS) ouvert
+- Service WinRM activé sur le serveur cible
+- Compte avec droits administrateur
+
+### Pour le diagnostic Linux (SSH)
+- Port 22 ouvert
+- Service SSH activé sur le serveur cible
+- Compte avec accès aux commandes système (top, free, df)
+
 ## Limitations connues
 
-- Le diagnostic Windows distant nécessite WMI/PowerShell Remoting (non implémenté en mode simulation)
-- Le diagnostic Linux distant nécessite SSH (non implémenté en mode simulation)
 - Le scan réseau peut être lent sur de grandes plages d'adresses
+- WinRM nécessite une configuration préalable sur les serveurs Windows
+- Les pare-feux doivent autoriser les connexions entrantes
 
 ## Évolutions futures
 
-- Intégration de PowerShell Remoting pour Windows
-- Connexion SSH automatique pour Linux
+- Support HTTPS pour WinRM (port 5986)
+- Authentification par certificat
 - Envoi de rapports par email
 - Interface web de consultation des rapports
 - Planification automatique des tâches

@@ -9,5 +9,8 @@ paramiko>=3.0.0
 # Scan réseau avancé (optionnel)
 python-nmap>=0.7.1
 
+# Connexion WinRM pour serveurs Windows
+pywinrm>=0.4.3
+
 # Utilitaires
 python-dotenv>=1.0.0
