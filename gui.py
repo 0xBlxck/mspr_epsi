@@ -368,26 +368,38 @@ class NTLSysToolboxGUI:
         """Dialogue pour vérifier un serveur Windows"""
         dialog = tk.Toplevel(self.root)
         dialog.title("État serveur Windows")
-        dialog.geometry("400x150")
+        dialog.geometry("400x300")
         dialog.transient(self.root)
         dialog.grab_set()
         
-        tk.Label(dialog, text="Adresse IP du serveur Windows:", font=('Arial', 10)).pack(pady=10)
+        tk.Label(dialog, text="Adresse IP du serveur Windows:", font=('Arial', 10)).pack(pady=5)
         server_entry = tk.Entry(dialog, width=30, font=('Arial', 10))
-        server_entry.pack(pady=5)
+        server_entry.pack()
         server_entry.insert(0, "192.168.10.10")
+        
+        tk.Label(dialog, text="Utilisateur WinRM:", font=('Arial', 10)).pack(pady=5)
+        user_entry = tk.Entry(dialog, width=30, font=('Arial', 10))
+        user_entry.pack()
+        user_entry.insert(0, "Administrator")
+        
+        tk.Label(dialog, text="Mot de passe WinRM:", font=('Arial', 10)).pack(pady=5)
+        pass_entry = tk.Entry(dialog, width=30, font=('Arial', 10), show='*')
+        pass_entry.pack()
         
         def execute():
             server = server_entry.get().strip()
-            if server:
+            user = user_entry.get().strip()
+            password = pass_entry.get().strip()
+            
+            if server and user and password:
                 dialog.destroy()
                 self.log_to_console(f"Vérification serveur Windows {server}...", "INFO")
                 self.update_status("Vérification Windows en cours...")
-                self.run_in_thread(self.diagnostic.check_windows_server, server)
+                self.run_in_thread(self.diagnostic.check_windows_server, server, user, password)
                 self.log_to_console("Vérification Windows terminée", "SUCCESS")
                 self.update_status("Prêt")
             else:
-                messagebox.showwarning("Erreur", "Veuillez saisir une adresse IP")
+                messagebox.showwarning("Erreur", "Veuillez remplir tous les champs")
         
         tk.Button(dialog, text="Vérifier", command=execute, bg='#3498db', fg='white', font=('Arial', 10)).pack(pady=10)
     

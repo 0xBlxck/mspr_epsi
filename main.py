@@ -7,6 +7,10 @@ Point d'entrée principal avec menu interactif CLI
 import sys
 import os
 from datetime import datetime
+from dotenv import load_dotenv
+
+# Chargement des variables d'environnement depuis .env s'il existe
+load_dotenv()
 
 # Ajout du répertoire courant au path pour les imports
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -79,12 +83,30 @@ class NTLSysToolbox:
                 port = input("Port MySQL (défaut 3306) : ").strip() or "3306"
                 database = input("Nom de la base de données : ").strip()
                 user = input("Utilisateur MySQL : ").strip()
-                password = input("Mot de passe MySQL : ").strip()
+                
+                # Mot de passe par défaut depuis ENV
+                env_pwd = os.getenv("MYSQL_PASSWORD")
+                pwd_prompt = "Mot de passe MySQL" + (f" [défaut: provenant de ENV]" if env_pwd else "") + " : "
+                password = input(pwd_prompt).strip() or env_pwd
+                
+                if not password:
+                    print("❌ Mot de passe requis")
+                    continue
+                    
                 self.diagnostic.check_mysql(host, int(port), database, user, password)
             elif choice == "3":
                 server = input("Adresse IP du serveur Windows : ").strip()
                 user = input("Utilisateur WinRM (ex: Administrator) : ").strip()
-                password = input("Mot de passe WinRM : ").strip()
+                
+                # Mot de passe par défaut depuis ENV
+                env_pwd = os.getenv("WINRM_PASSWORD")
+                pwd_prompt = "Mot de passe WinRM" + (f" [défaut: provenant de ENV]" if env_pwd else "") + " : "
+                password = input(pwd_prompt).strip() or env_pwd
+                
+                if not password:
+                    print("❌ Mot de passe requis")
+                    continue
+
                 self.diagnostic.check_windows_server(server, user, password)
             elif choice == "4":
                 server = input("Adresse IP du serveur Linux : ").strip()
@@ -94,7 +116,11 @@ class NTLSysToolbox:
                     ssh_key = input("Chemin de la clé SSH : ").strip()
                     self.diagnostic.check_linux_server(server, user, ssh_key_path=ssh_key)
                 else:
-                    password = input("Mot de passe SSH : ").strip()
+                    # Mot de passe par défaut depuis ENV
+                    env_pwd = os.getenv("SSH_PASSWORD")
+                    pwd_prompt = "Mot de passe SSH" + (f" [défaut: provenant de ENV]" if env_pwd else "") + " : "
+                    password = input(pwd_prompt).strip() or env_pwd
+                    
                     self.diagnostic.check_linux_server(server, user, password=password)
             elif choice == "5":
                 host = input("Adresse IP ou nom d'hôte à tester : ").strip()
