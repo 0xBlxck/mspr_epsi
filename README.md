@@ -49,8 +49,8 @@ winrm quickconfig
 
 \`\`\`bash
 # Cloner le dépôt
-git clone https://github.com/votre-organisation/ntl-systoolbox.git
-cd ntl-systoolbox
+git clone https://github.com/0xBlxck/mspr_epsi.git
+cd mspr_epsi
 
 # Installer les dépendances Python
 pip install -r requirements.txt
